@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # Save/load settings
     model_dir = "out"
     out_file = "ckpt"
-    init_from = "scratch"  # "resume"
+    init_from = "resume" # "scratch"
     in_file = "ckpt"
 
     # System settings
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     eval_batch_size = 32
 
     # Compute settings
-    cuda_device = "cuda:1"
+    cuda_device = "cuda:0"
     no_cuda = False
     threads = 5
     compile = False
