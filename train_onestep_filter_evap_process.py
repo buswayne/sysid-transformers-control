@@ -19,11 +19,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_onestep_cstr_filter_no_normed_no_skip", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_onestep_cstr_filter_no_normed_no_skip", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
+    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -31,13 +31,13 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Dataset
-    parser.add_argument('--nx', type=int, default=5, metavar='N',
+    parser.add_argument('--nx', type=int, default=2, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--nu', type=int, default=1, metavar='N',
+    parser.add_argument('--nu', type=int, default=3, metavar='N',
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=600, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=300, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -93,7 +93,8 @@ if __name__ == '__main__':
     cfg.beta2 = 0.95
 
     # Derived settings
-    cfg.block_size = cfg.seq_len
+    n_skip = 200
+    cfg.block_size = cfg.seq_len + n_skip
     cfg.lr_decay_iters = cfg.max_iters
     cfg.min_lr = cfg.lr/10.0  #
     cfg.decay_lr = not cfg.fixed_lr
@@ -133,20 +134,21 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
+    train_ds = CSTRDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
                          mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                          system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = WHDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
+    val_ds = CSTRDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
                        mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                        system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
                        data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
+
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
 
-    model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=1, n_u=1, block_size=cfg.block_size,
+    model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
                       bias=cfg.bias, dropout=cfg.dropout)  # start with model_args from command line
 
     if cfg.init_from == "scratch":

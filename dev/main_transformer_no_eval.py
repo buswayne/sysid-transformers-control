@@ -130,7 +130,7 @@ if __name__ == '__main__':
         'train_time': time_loop,
         'LOSS': LOSS,
     }
-    torch.save(checkpoint, out_dir/"ckpt.pt")
+    torch.save(checkpoint, out_dir/"ckpt_onestep_cstr.pt")
     
 
 
