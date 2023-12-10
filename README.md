@@ -1,4 +1,45 @@
-# In-context learning for model-free system identification
+# For control and filtering
+Required modifications:
+
+in the library filterpy, `EKF.py`, modify these two functions:
+
+```
+def predict_x(self, u=0):
+    """
+    Predicts the next state of X. If you need to
+    compute the next state yourself, override this function. You would
+    need to do this, for example, if the usual Taylor expansion to
+    generate F is not providing accurate results for you.
+    """
+    #self.x = dot(self.F, self.x) + dot(self.B, u)
+    #self.x = dot(np.array(self.F(self.x, u)), self.x) + dot(np.array(self.B(self.x, u)), u)
+    self.x = np.array(self.F(self.x, u))# + A_linearized * (self.z - self.x)
+
+def predict(self, u=0):
+    """
+    Predict next state (prior) using the Kalman filter state propagation
+    equations.
+
+    Parameters
+    ----------
+
+    u : np.array
+        Optional control vector. If non-zero, it is multiplied by B
+        to create the control input into the system.
+    """
+
+
+    A_linearized = np.array(self.A(self.x, u))
+    # self.P = dot(self.F(self.x, u), self.P).dot(self.F(self.x, u).T) + self.Q
+    self.predict_x(u)          # this is x(k+1|k)
+    self.P = dot(A_linearized, self.P).dot(A_linearized.T) + self.Q   # this is P(k+1|k)
+
+    # save prior
+    self.x_prior = np.copy(self.x)
+    self.P_prior = np.copy(self.P)
+```
+
+## In-context learning for model-free system identification
 
 This repository contains the Python code to reproduce the results of the paper [In-context learning for model-free system identification](http://arxiv.org/abs/2308.13380)
 by Marco Forgione, Filippo Pura and Dario Piga.

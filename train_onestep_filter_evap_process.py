@@ -19,9 +19,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_onestep_cstr_filter_no_normed_no_skip", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_onestep_cstr_filter_no_normed_no_skip_ny2_prbs", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_onestep_cstr_filter_no_normed_no_skip", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_onestep_cstr_filter_no_normed_no_skip_ny2_prbs", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -35,9 +35,9 @@ if __name__ == '__main__':
                         help='model order (default: 5)')
     parser.add_argument('--nu', type=int, default=3, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--ny', type=int, default=1, metavar='N',
+    parser.add_argument('--ny', type=int, default=2, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=300, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=500, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--eval-interval', type=int, default=2000, metavar='N',
+    parser.add_argument('--eval-interval', type=int, default=1000, metavar='N',
                         help='batch size (default:32)')
     parser.add_argument('--eval-iters', type=int, default=100, metavar='N',
                         help='batch size (default:32)')

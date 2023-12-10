@@ -8,6 +8,7 @@ from control_examples import create_cstr
 from cstr_by_chatgpt import CSTRModel
 from cstr_by_chatgpt_numpy import simulate_cstr
 import matplotlib.pyplot as plt
+from utils import prbs
 
 class LinearDynamicalDataset(IterableDataset):
     def __init__(self, nx=5, nu=1, ny=1, seq_len=500, strictly_proper=True, dtype="float32", normalize=True):
@@ -216,7 +217,7 @@ class PWHDataset(IterableDataset):
 ############################# New CSTR dataset #####################################################
 ####################################################################################################
 class CSTRDataset(IterableDataset):
-    def __init__(self, nx=2, nu=2, ny=2, seq_len=600, random_order=True,
+    def __init__(self, nx=2, nu=3, ny=2, seq_len=600, random_order=True,
                  strictly_proper=True, normalize=False, dtype="float32",
                  fixed_system=False, system_seed=None, data_seed=None, **mdlargs):
         super(CSTRDataset).__init__()
@@ -244,19 +245,27 @@ class CSTRDataset(IterableDataset):
 
             u = np.zeros((self.seq_len + n_skip, 3))
 
-            u[:,:2] = 5 * self.data_rng.normal(size=(self.seq_len + n_skip, 2)) # input signal at time t
+            u_s = np.array([191.713, 215.888])
+
+            #u[:,:2] = 5 * self.data_rng.normal(size=(self.seq_len + n_skip, 2)) + u_s # input signal at time t
+
+            u[:, 0] = prbs(self.seq_len + n_skip) + u_s[0]
+            u[:, 1] = prbs(self.seq_len + n_skip) + u_s[1]
             #u = np.random.randn(self.seq_len + n_skip, 2)  # input to be improved (filtered noise, multisine, etc)
             # u = torch.from_numpy(self.data_rng.normal(size=(self.seq_len + n_skip, 2))).to(torch.float32).to('cuda') # cstr has two inputs u1, u2
 
             # System
             # this is both y1 and y2 (at time t)
 
-            y = simulate_cstr(u, perturbation=0.4)
+            x_n, x, y = simulate_cstr(u, perturbation=0.2)
 
             # input to the model are (u1, u2, y1) at time t, output of the model is (y2 at time t)
-            u[:,2] = y[:,0]
+            u[:,2] = y[:,1]
 
-            y = y[:,1].reshape(-1,1)
+            # output to the model are (x1, x2) noiseless
+            y = x_n.reshape(-1, 2)
+            #y = x_n[:,0].reshape(-1,1)
+
             # print(y.dtype)
             # print(u.dtype)
 

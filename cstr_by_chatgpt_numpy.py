@@ -20,14 +20,14 @@ def problem_data(perturbation):
     """
     perturbation = np.float32(perturbation)
     data = {}
-    data['a'] = np.float32(0.5616)
-    data['b'] = np.float32(0.3126)
-    data['c'] = np.float32(48.43)
-    data['d'] = np.float32(0.507)
-    data['e'] = np.float32(55.0)
-    data['f'] = np.float32(0.1538)
-    data['g'] = np.float32(90.0)
-    data['h'] = np.float32(0.16)
+    data['a'] = np.float32(0.5616) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['b'] = np.float32(0.3126) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['c'] = np.float32(48.43) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['d'] = np.float32(0.507) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['e'] = np.float32(55.0) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['f'] = np.float32(0.1538) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['g'] = np.float32(90.0) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    data['h'] = np.float32(0.16) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
     data['M'] = 20.0 * (1.0 + perturbation * np.random.uniform(-1.0, 1.0)) #(1 + perturbation * np.random.uniform(-1, 1))
     data['C'] = 4.0 * (1.0 + perturbation * np.random.uniform(-1.0, 1.0)) #(1 + perturbation * np.random.uniform(-1, 1))
     data['UA2'] = 6.84 * (1.0 + perturbation * np.random.uniform(-1., 1.))#(1 + perturbation * np.random.uniform(-1, 1))
@@ -107,23 +107,34 @@ def dynamics(x, u, intermediate_data):
 
 
 @jit
-def simulate_cstr(u, perturbation):
+def simulate_cstr(u, perturbation, save_params=False, process_noise = False):
     # Hyperparams
     Ts = 1
     # Data are constants that we can compute once
     data = problem_data(perturbation)
     # Initial conditions (u_0 actually is not required since we generated u_forced)
     x_0, u_0 = vars()
+
     # Initialize the tensor to store the trajectory
+    x_n = np.zeros((len(u), 2))
+    x = np.zeros((len(u), 2))
     y = np.zeros((len(u), 2))
+    # Noisy
 
     # Perturb the initial state (meta model)
     x_0 = x_0 * (1. + perturbation * np.random.uniform(-1., 1.))
 
+    s = x_0
+    s_noisy = s # assume to start at the right point
+
     while True:
         for i in range(len(u)):
-            s = x_0                 # state
+
+            # noiseless case
             a = u[i,:]       # action
+
+            # store the nominal value
+            x_n[i, :] = s
             # Calculate intermediate variables
             intermediate_data = intermediate_vars(s, a, data)
             # Dynamics equation
@@ -131,11 +142,28 @@ def simulate_cstr(u, perturbation):
             # Integrate dynamics using forward Euler integration
             s_next = s + Ts * x_dot
 
-            y[i, :] = s    # y1 and y2 at time t
-            # recursively update the state
-            x_0 = s_next
+            # in parallel, compute the same but with process noise
 
-        return y
+            # store the real (noisy) value
+            x[i, :] = s_noisy
+            # store the measure, that has additional measure noise
+            y[i, :] = s_noisy + (np.array([[2], [2]]) * np.random.randn(2, 1)).flatten() # y1 and y2 at time t
+
+            # Calculate intermediate variables
+            intermediate_data = intermediate_vars(s_noisy, a, data)
+            # Dynamics equation
+            x_dot = dynamics(s_noisy, a, intermediate_data)
+            # Integrate dynamics using forward Euler integration
+            s_next_noisy = s_noisy + Ts * x_dot + (np.array([[.5], [.5]]) * np.random.randn(2, 1)).flatten()
+
+            # recursively update the state
+            s = s_next
+            s_noisy = s_next_noisy
+
+        if save_params:
+            return x_n, x, y, intermediate_data
+        else:
+            return x_n, x, y
 
 
 if __name__ == "__main__":
