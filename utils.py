@@ -1,10 +1,10 @@
 import numpy as np
 
 def prbs(nstep):
-    a_range = [0, 2]
-    a = np.random.rand(nstep) * (a_range[1] - a_range[0]) + a_range[0]  # range for amplitude
+    #a_range = [0, 2]
+    #a = np.random.rand(nstep) * (a_range[1] - a_range[0]) + a_range[0]  # range for amplitude
 
-    b_range = [2, 10]
+    b_range = [50, 500]
     b = np.random.rand(nstep) * (b_range[1] - b_range[0]) + b_range[0]  # range for frequency
     b = np.round(b)
     b = b.astype(int)
@@ -18,8 +18,8 @@ def prbs(nstep):
     a = np.zeros(nstep)
     j = 0
     while j < nstep:
-        a[j] = 20
-        a[j + 1] = -20
+        a[j] = 10
+        a[j + 1] = -10
         j = j + 2
 
     i = 0

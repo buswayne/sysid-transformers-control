@@ -3,12 +3,10 @@ import time
 import torch
 import numpy as np
 import math
-from dataset import LinearDynamicalDataset
+from state_estimator.dataset_evaporation_process import LinearDynamicalDataset
 from torch.utils.data import DataLoader
 from model import GPTConfig, GPT
 import tqdm
-import argparse
-
 
 if __name__ == '__main__':
 

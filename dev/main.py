@@ -1,7 +1,5 @@
 import time
-import torch
-import numpy as np
-from dataset import LinearDynamicalDataset
+from state_estimator.dataset_evaporation_process import LinearDynamicalDataset
 from torch.utils.data import DataLoader
 
 # Press the green button in the gutter to run the script.

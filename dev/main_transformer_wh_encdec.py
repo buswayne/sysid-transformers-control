@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset import WHDataset, LinearDynamicalDataset
+from state_estimator.dataset_evaporation_process import WHDataset
 from torch.utils.data import DataLoader
 from transformers_custom import Config, TSTransformer
 from model import warmup_cosine_lr
