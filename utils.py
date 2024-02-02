@@ -1,5 +1,5 @@
 import numpy as np
-
+from control.matlab import *
 def prbs(nstep):
     #a_range = [0, 2]
     #a = np.random.rand(nstep) * (a_range[1] - a_range[0]) + a_range[0]  # range for amplitude
@@ -29,3 +29,15 @@ def prbs(nstep):
         prbs[k:] = a[i]
         i = i + 1
     return prbs
+
+def simulate_onestep_campi_example_1(data, u, t):
+
+    s = tf('s')
+
+    P = ((data['m1'] * s ** 2 + (data['c1'] + data['c2']) * s + (data['k1'] + data['k2'])) /
+        ((data['m1'] * s ** 2 + (data['c1'] + data['c2']) * s + (data['k1'] + data['k2'])) *
+         (data['m2'] * s ** 2 + data['c2'] * s + data['k2']) - (data['k2'] + data['c2'] * s) ** 2))
+
+    y, _, _ = lsim(P, u, t)
+
+    return y

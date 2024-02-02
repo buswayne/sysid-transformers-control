@@ -91,9 +91,10 @@ def servo_motor(x, u, data):
 
 
 @jit(nopython=True)
-def simulate_servo_positioning_system(Ts, u, perturbation, save_params=False, process_noise=False):
+def simulate_servo_positioning_system(Ts, u, data=None, perturbation=0.0, save_params=False, process_noise=False):
     # Data are constants that we can compute once
-    data = problem_data(perturbation)
+    if not data:
+        data = problem_data(perturbation)
 
     # Initial conditions (u_0 actually is not required since we generated u_forced)
     x_0, u_0 = vars()
@@ -104,9 +105,9 @@ def simulate_servo_positioning_system(Ts, u, perturbation, save_params=False, pr
     # Perturb the initial state (meta model)
     x_0 = x_0
 
-    for i in range(len(u)):
+    for i in range(len(u)-1):
         s = x_0
-        a = u[i]
+        a = u[i+1]
 
         # Runge-Kutta
         k1 = Ts * servo_motor(s, a, data)
@@ -140,7 +141,7 @@ if __name__ == "__main__":
     perturbation = 0.0
 
     # Simulate the system trajectory using the model
-    x, u, y, _ = simulate_servo_positioning_system(Ts, u_filtered, perturbation)
+    x, u, y, _ = simulate_servo_positioning_system(Ts, u_filtered, perturbation=perturbation)
 
     plt.subplot(211)
     plt.plot(t, x[:, 0])

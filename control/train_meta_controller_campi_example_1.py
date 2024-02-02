@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset_servo_positioning_system import ServoPositioningSystemDataset
+from dataset_campi_example_1 import CampiExample1Dataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -19,9 +19,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_integral_error_no_normed_no_skip_prbs", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_100seq_pretrained_campi_example_1", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_integral_error_no_normed_no_skip_prbs", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_100seq_pretrained_campi_example_1", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -31,13 +31,13 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Dataset
-    parser.add_argument('--nx', type=int, default=3, metavar='N',
+    parser.add_argument('--nx', type=int, default=4, metavar='N',
                         help='model order (default: 5)')
     parser.add_argument('--nu', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=502, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=100, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--eval-interval', type=int, default=1000, metavar='N',
+    parser.add_argument('--eval-interval', type=int, default=500, metavar='N',
                         help='batch size (default:32)')
     parser.add_argument('--eval-iters', type=int, default=100, metavar='N',
                         help='batch size (default:32)')
@@ -136,19 +136,19 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = ServoPositioningSystemDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
+    train_ds = CampiExample1Dataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
                          mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                          system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
 
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=14)#cfg.threads)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = ServoPositioningSystemDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
+    val_ds = CampiExample1Dataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
                        mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                        system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
                        data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
 
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=14)#cfg.threads)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
                       bias=cfg.bias, dropout=cfg.dropout)  # start with model_args from command line
