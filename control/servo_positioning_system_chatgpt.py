@@ -138,7 +138,7 @@ if __name__ == "__main__":
     u_filtered = lsim(F_input, u, t)[0].reshape(-1,1)
 
     # Perturbation factor for initial conditions
-    perturbation = 0.0
+    perturbation = 0.1
 
     # Simulate the system trajectory using the model
     x, u, y, _ = simulate_servo_positioning_system(Ts, u_filtered, perturbation=perturbation)

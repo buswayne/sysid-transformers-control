@@ -19,17 +19,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-<<<<<<< Updated upstream
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_integral_error_no_normed_no_skip_prbs", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_vale_simple_example_2000", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_integral_error_no_normed_no_skip_prbs", metavar='S',
-=======
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_vale", metavar='S',
-                        help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_vale", metavar='S',
->>>>>>> Stashed changes
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_vale_simple_example_2000", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -43,7 +37,7 @@ if __name__ == '__main__':
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=502, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=2000, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -75,7 +69,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--eval-interval', type=int, default=1000, metavar='N',
+    parser.add_argument('--eval-interval', type=int, default=500, metavar='N',
                         help='batch size (default:32)')
     parser.add_argument('--eval-iters', type=int, default=100, metavar='N',
                         help='batch size (default:32)')
@@ -83,7 +77,7 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Compute
-    parser.add_argument('--threads', type=int, default=10,
+    parser.add_argument('--threads', type=int, default=16,
                         help='number of CPU threads (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -146,7 +140,7 @@ if __name__ == '__main__':
                          mag_range=cfg.mag_range, phase_range=cfg.phase_range,
                          system_seed=cfg.seed, data_seed=cfg.seed+1, fixed_system=cfg.fixed_system)
 
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
     val_ds = ServoPositioningSystemDataset(nx=cfg.nx, nu=cfg.nu, ny=cfg.ny, seq_len=cfg.seq_len,
@@ -154,7 +148,7 @@ if __name__ == '__main__':
                        system_seed=cfg.seed if cfg.fixed_system else cfg.seed+2,
                        data_seed=cfg.seed+3, fixed_system=cfg.fixed_system)
 
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
                       bias=cfg.bias, dropout=cfg.dropout)  # start with model_args from command line

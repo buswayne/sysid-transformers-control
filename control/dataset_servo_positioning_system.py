@@ -44,12 +44,19 @@ class ServoPositioningSystemDataset(IterableDataset):
 
         while True:  # infinite dataset
 
-            u_s = np.array([1e-3]) # optional offset, set to zero ftb
-            u = np.zeros((len(t), self.nu))
-            u[:, 0] = prbs(len(t)) + u_s[0]
+            # u_s = np.array([1e-3]) # optional offset, set to zero ftb
+            # u = np.zeros((len(t), self.nu))
+            # u[:, 0] = prbs(len(t)) + u_s[0]
+
+            u_tmp = np.random.normal(0, 200, len(t))
+            # u = 1e-3 * np.ones((t.shape[0],1))
+            s = tf('s')
+            tau = 1 / (1.6 * 2 * np.pi)
+            F_input = 1 / (1 + tau * s)
+            u_filtered = lsim(F_input, u_tmp, t)[0]#.reshape(-1, 1)
 
             # System
-            x, u, y, _ = simulate_servo_positioning_system(Ts, u, perturbation=0.25)
+            x, u, y, _ = simulate_servo_positioning_system(Ts, u_filtered, perturbation=0.0)
 
             # input to the model are (e_v) at time t, output of the model is (u)
             #             __________________________
@@ -61,9 +68,10 @@ class ServoPositioningSystemDataset(IterableDataset):
             # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
             s = tf('s')
             tau = 5  # 2 sec t. ass
-            M = 1 / (1 + (tau / (2 * np.pi)) * s)
+            M = (1 + (0.001*tau / (2 * np.pi)) * s) / (1 + (tau / (2 * np.pi)) * s)
             M = c2d(M, Ts)
             z = tf('z')
+<<<<<<< Updated upstream
 
             u_downsampled = u[::int(Ts_f / Ts)]
             y_downsampled = y[::int(Ts_f/Ts), 0]
@@ -87,6 +95,53 @@ class ServoPositioningSystemDataset(IterableDataset):
             # consider that u is the ouput to be predicted by the transformer, e_v is the input
             # yield torch.tensor(u), torch.tensor(np.concatenate((e_v, e_v_integral),axis=1))#, torch.tensor(y)
             yield torch.tensor(u), torch.tensor(e_v_integral)
+=======
+            # y_downsampled = y[::int(Ts_f/Ts), 0]
+            # r_v = lsim((z * M) ** (-1), y_downsampled, t[::int(Ts_f/Ts)])[0]
+            # e_v = (r_v - y_downsampled).reshape(-1,1)  # must be 2d
+
+            # u = u[::int(Ts_f/Ts)].astype(self.dtype)
+            # y = y[::int(Ts_f/Ts)].astype(self.dtype)
+
+            # print(y[:,0].shape)
+
+
+            r_v = lsim((M) ** (-1), y[:,0], t)[0]
+            e_v = (r_v - y[:,0]).reshape(-1, 1)
+            e_v = e_v.astype(self.dtype)
+            u = u.astype(self.dtype)#.reshape(-1,1)
+            y = y.astype(self.dtype)#.reshape(-1,1)
+
+
+            e_v = e_v[::int(Ts_f / Ts)]
+            u = u[::int(Ts_f / Ts)]
+
+            e_1 = e_v[1:].flatten()  #
+            e_2 = e_v[:-1].flatten()  #
+
+
+            #e_1 = e_v[1:].flatten()
+            #e_2 = e_v[:-1].flatten()
+
+            #u_1 = u[:-1]#.reshape(-1,1)
+
+            #print(e_1.shape)
+            #print(e_2.shape)
+            #print(u.shape)
+            input_vector = np.stack((e_1,e_2),axis=1)
+            output_vector = u[1:].reshape(-1,1)
+            #print(input_vector.shape)
+
+            #plt.plot(y)
+            #plt.show()
+            #plt.plot(u)
+            #plt.plot(y[:,0])
+
+            #print(y[:, :, 1])
+
+            #yield torch.tensor(u), torch.tensor(e_v)#, torch.tensor(y)
+            yield torch.tensor(input_vector), torch.tensor(output_vector)
+>>>>>>> Stashed changes
 
 if __name__ == "__main__":
     # train_ds = WHDataset(nx=2, seq_len=32, mag_range=(0.5, 0.96),
@@ -95,6 +150,7 @@ if __name__ == "__main__":
     start = time.time()
     train_ds = ServoPositioningSystemDataset(nx=3, seq_len=502, system_seed=42, data_seed=445, fixed_system=False)
     # train_ds = LinearDynamicalDataset(nx=5, nu=2, ny=3, seq_len=1000)
+<<<<<<< Updated upstream
     train_dl = DataLoader(train_ds, batch_size=32)
     batch_u, batch_e_v = next(iter(train_dl))
     print(batch_u.shape)
@@ -111,4 +167,27 @@ if __name__ == "__main__":
     plt.plot(t, batch_e_v[:, :, 0].squeeze().T)
     plt.ylabel('$e_v = (M^{-1} - 1)y_1$')
     plt.show()
+=======
+    train_dl = DataLoader(train_ds, batch_size=4)
+    #batch_u, batch_e_v, batch_y = next(iter(train_dl))
+    batch_input, batch_output = next(iter(train_dl))
+    print(batch_input.shape)
+    print(batch_output.shape)
+    #print(batch_y.shape)
+    #plt.plot(batch_y[:,:,0].squeeze().T)
+    #plt.show()
+    # print(batch_u.shape)
+    # print(batch_e_v.shape)
+    #t = np.arange(0, batch_u.shape[1]*1e-2, 1e-2)
+    #plt.subplot(311)
+    #plt.plot(t, batch_y[:, :, 0].squeeze().T)
+    #plt.ylabel(r'$y_1 = \theta$')
+    #plt.subplot(312)
+    #plt.plot(t, batch_y[:, :, 1].squeeze().T)
+    #plt.ylabel(r'$y_2 = \omega$')
+    #plt.subplot(313)
+    #plt.plot(t, batch_e_v[:, :, 0].squeeze().T)
+    #plt.ylabel('$e_v = (M^{-1} - 1)y_1$')
+    #plt.show()
+>>>>>>> Stashed changes
     # print(batch_y.shape, batch_u.shape)
