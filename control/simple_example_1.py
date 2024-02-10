@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     print(len(u))
     # Perturbation factor for initial conditions
-    perturbation = 0.1
+    perturbation = 0.0
 
     # Simulate the system trajectory using the model
     x, u, y = simulate_simple_example_1(t, u, perturbation)
