@@ -10,7 +10,7 @@ from simple_example_1 import simulate_simple_example_1
 import matplotlib.pyplot as plt
 from utils import prbs
 from control.matlab import *
-
+from scipy.interpolate import interp1d
 
 class SimpleExample1Dataset(IterableDataset):
     def __init__(self, seq_len=1e6, normalize=False, dtype="float32", return_y=False):
@@ -23,7 +23,6 @@ class SimpleExample1Dataset(IterableDataset):
     def __iter__(self):
 
         # Call the function to generate data
-
         ts = 1e-2
         T = 20#ts*self.seq_len# * 2
         t = np.arange(0, T, ts)
@@ -32,9 +31,19 @@ class SimpleExample1Dataset(IterableDataset):
 
         while True:  # infinite dataset
 
+            # prbs instead
+            # random
+            n_steps = np.random.randint(2, 50)
             u = np.random.normal(0, 1000, t.shape)
+
+            f = interp1d(t[::n_steps], u[::n_steps], kind='next',
+                         bounds_error=False,
+                         fill_value=0.0)
+            #u = f(t)
+            u = np.nan_to_num(u)
+            #print(np.isnan(u).sum())
             # System
-            x, u, y = simulate_simple_example_1(t, u, perturbation=0.0)
+            x, u, y = simulate_simple_example_1(t, u, perturbation=0.2)
 
             # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
             s = tf('s')
@@ -47,14 +56,15 @@ class SimpleExample1Dataset(IterableDataset):
             u = u.reshape(-1, 1)
             # e_v_integral = np.cumsum(e_v).reshape(-1,1)
 
-            e_v = e_v[1:].astype(self.dtype)
+            e_v = e_v.astype(self.dtype)
             # e_v_integral = e_v_integral.astype(self.dtype)
+            u = np.insert(u, 0, 1e-6)
             u = u[:-1].astype(self.dtype)
-            y = y[1:].astype(self.dtype)
+            y = y.astype(self.dtype)
 
             # lunghezza contesto 5
-            start_idx = np.random.randint(0, len(e_v)-n_context)
-            #start_idx = 0
+            #start_idx = np.random.randint(0, len(e_v)-n_context)
+            start_idx = 0
             e_v = e_v[start_idx:start_idx + n_context]
             u = u[start_idx:start_idx + n_context]
             y = y[start_idx:start_idx + n_context]
@@ -83,7 +93,7 @@ if __name__ == "__main__":
     #                      phase_range=(0, math.pi / 3),
     #                      system_seed=42, data_seed=445, fixed_system=False)
     # start = time.time()
-    train_ds = SimpleExample1Dataset(seq_len=50, normalize=True)
+    train_ds = SimpleExample1Dataset(seq_len=500, normalize=True)
     train_dl = DataLoader(train_ds, batch_size=32)
     batch_output, batch_input = next(iter(train_dl))
 
@@ -96,9 +106,16 @@ if __name__ == "__main__":
 
     plt.figure()
     #plt.plot(batch_input[0,:,0])
+    Ts = 1e-2
+    T = batch_input.shape[1]*Ts  # ts*self.seq_len# * 2
+    t = np.arange(0, T, Ts)
+
     for i in range(0,batch_output.shape[0]):
         plt.subplot(211)
-        plt.plot(batch_input[i, :, 0], c='tab:blue', alpha=0.2)
+        plt.plot(t, batch_input[i, :, 0], c='tab:blue', alpha=0.2)
+        plt.legend(['$e_v$'])
         plt.subplot(212)
-        plt.plot(batch_output[i, :, 0], c='tab:blue', alpha=0.2)
+        plt.plot(t, batch_output[i, :, 0], c='tab:blue', alpha=0.2)
+        plt.legend(['$u$'])
+        plt.xlabel("$t$ [s]")
     plt.show()
