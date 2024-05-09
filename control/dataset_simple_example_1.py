@@ -23,7 +23,6 @@ class SimpleExample1Dataset(IterableDataset):
     def __iter__(self):
 
         # Call the function to generate data
-
         ts = 1e-2
         T = ts*self.seq_len
         T = 5

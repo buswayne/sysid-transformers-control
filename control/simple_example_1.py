@@ -25,7 +25,7 @@ def problem_data(perturbation):
     perturbation = np.float32(perturbation)
     data = {}
     data['num_1'] = np.float32(1) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
-    data['num_2'] = np.float32(0) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
+    # data['num_2'] = np.float32(0) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
     data['den_1'] = np.float32(1) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
     data['den_2'] = np.float32(3) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
     data['den_3'] = np.float32(2) * (1.0 + perturbation * np.random.uniform(-1.0, 1.0))
@@ -35,7 +35,7 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     # Data are constants that we can compute once
     data = problem_data(perturbation)
 
-    num = [data['num_1'], data['num_2']]
+    num = [data['num_1']]
     den = [data['den_1'], data['den_2'], data['den_3']]
     G = tf(num, den)
 
