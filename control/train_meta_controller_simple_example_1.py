@@ -19,9 +19,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1_500", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1_500", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -136,12 +136,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len)
+    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len)
+    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 
@@ -177,11 +177,11 @@ if __name__ == '__main__':
     def estimate_loss():
         model.eval()
         loss = 0.0
-        for eval_iter, (batch_u, batch_y) in enumerate(val_dl):
+        for eval_iter, (batch_u, batch_e) in enumerate(val_dl):
             if device_type == "cuda":
-                batch_y = batch_y.pin_memory().to(device, non_blocking=True)
                 batch_u = batch_u.pin_memory().to(device, non_blocking=True)
-            _, loss_iter = model(batch_u, batch_y)
+                batch_e = batch_e.pin_memory().to(device, non_blocking=True)
+            _, loss_iter = model(batch_e, batch_u)
             loss += loss_iter.item()
             if eval_iter == cfg.eval_iters:
                 break
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     get_lr = partial(warmup_cosine_lr, lr=cfg.lr, min_lr=cfg.min_lr,
                      warmup_iters=cfg.warmup_iters, lr_decay_iters=cfg.lr_decay_iters)
     time_start = time.time()
-    for iter_num, (batch_u, batch_y) in tqdm.tqdm(enumerate(train_dl, start=iter_num)):
+    for iter_num, (batch_u, batch_e) in tqdm.tqdm(enumerate(train_dl, start=iter_num)):
 
         if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
             loss_val = estimate_loss()
@@ -234,9 +234,9 @@ if __name__ == '__main__':
             param_group['lr'] = lr_iter
 
         if device_type == "cuda":
-            batch_y = batch_y.pin_memory().to(device, non_blocking=True)
             batch_u = batch_u.pin_memory().to(device, non_blocking=True)
-        batch_y_pred, loss = model(batch_u, batch_y)
+            batch_e = batch_e.pin_memory().to(device, non_blocking=True)
+        batch_u_pred, loss = model(batch_e, batch_u)
         LOSS_ITR.append(loss.item())
         if iter_num % 100 == 0:
             print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")

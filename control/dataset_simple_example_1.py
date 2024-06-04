@@ -73,7 +73,7 @@ class SimpleExample1Dataset(IterableDataset):
             # e_2 = e_v[:-1].flatten()  #
 
             if self.normalize:
-                e_v = e_v / 6  # mean 0, std 10
+                e_v = e_v / 0.3  # mean 0, std 10
                 u = u / 1000  # mean 0, std 17
                 # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
                 # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
@@ -97,8 +97,8 @@ if __name__ == "__main__":
     train_dl = DataLoader(train_ds, batch_size=32)
     batch_output, batch_input = next(iter(train_dl))
 
-    print(batch_output.shape)
-    print(batch_input.shape)
+    # print(batch_output.shape)
+    # print(batch_input.shape)
     print(batch_output[:, :, 0].mean())
     print(batch_output[:, :, 0].std())
     print(batch_input[:, :, 0].mean())
