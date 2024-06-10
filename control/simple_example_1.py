@@ -10,13 +10,13 @@ import warnings
 
 warnings.simplefilter('ignore', category=(NumbaWarning, NumbaPerformanceWarning, NumbaDeprecationWarning))
 
-plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams["mathtext.fontset"] = "cm"
-plt.rcParams['axes.labelsize']=14
-plt.rcParams['xtick.labelsize']=11
-plt.rcParams['ytick.labelsize']=11
-plt.rcParams['axes.grid']=True
-plt.rcParams['axes.xmargin']=0
+# plt.rcParams["font.family"] = "Times New Roman"
+# plt.rcParams["mathtext.fontset"] = "cm"
+# plt.rcParams['axes.labelsize']=14
+# plt.rcParams['xtick.labelsize']=11
+# plt.rcParams['ytick.labelsize']=11
+# plt.rcParams['axes.grid']=True
+# plt.rcParams['axes.xmargin']=0
 
 @jit(nopython=True)
 def problem_data(perturbation):
@@ -37,7 +37,13 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
 
     num = [data['num_1']]
     den = [data['den_1'], data['den_2'], data['den_3']]
+
+    s = tf('s')
     G = tf(num, den)
+    tau = stepinfo(G)['SettlingTime'] / 5
+    G_proper = G * (1 + 5e-1 * (tau / (2 * np.pi)) * s) ** 2
+
+    # u = lsim(G_proper**(-1), u, t)[0]
 
     y, _, x = lsim(G, u, t)
 

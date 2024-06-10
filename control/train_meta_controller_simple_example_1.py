@@ -19,11 +19,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.1", metavar='S',
                         help='Saved model name')
     parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="pretrained", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                         help='number of iterations (default: 1M)')
     parser.add_argument('--n-embd', type=int, default=128, metavar='N',
                         help='number of iterations (default: 1M)')
-    parser.add_argument('--dropout', type=float, default=0.0, metavar='LR',
+    parser.add_argument('--dropout', type=float, default=0, metavar='LR',
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--bias', action='store_true', default=False,
                         help='bias in model')
