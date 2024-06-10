@@ -43,12 +43,9 @@ class SimpleExample1Dataset(IterableDataset):
 
             choice = np.random.choice(choices)
 
-            print(choice)
-            choice = "white noise"
-
             if choice == "white noise":
                 n_steps = np.random.randint(2, 50)
-                u = np.random.normal(0, 160, t.shape)
+                u = np.random.normal(0, 140, t.shape)
                 f = interp1d(t[::n_steps], u[::n_steps], kind='next',
                              bounds_error=False,
                              fill_value=0.0)
@@ -93,8 +90,8 @@ class SimpleExample1Dataset(IterableDataset):
             # e_2 = e_v[:-1].flatten()  #
 
             if self.normalize:
-                e_v = e_v / 2.3  # mean 0, std 10
-                u = u / 420  # mean 0, std 17
+                e_v = e_v / 34  # mean 0, std 10
+                u = u / 8000  # mean 0, std 17
                 # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
                 # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
             # input_vector = np.stack((e_1,e_2),axis=1)
@@ -114,18 +111,18 @@ if __name__ == "__main__":
     #                      phase_range=(0, math.pi / 3),
     #                      system_seed=42, data_seed=445, fixed_system=False)
     # start = time.time()
-    train_ds = SimpleExample1Dataset(seq_len=500, normalize=False, return_y=True)
+    train_ds = SimpleExample1Dataset(seq_len=500, normalize=True, return_y=True)
     train_dl = DataLoader(train_ds, batch_size=64)
     batch_output, batch_input, batch_y, _ = next(iter(train_dl))
 
     # print(batch_output.shape)
     # print(batch_input.shape)
-    # print(batch_output[:, :, 0].mean())
-    # print(batch_output[:, :, 0].std())
-    # print(batch_input[:, :, 0].mean())
-    # print(batch_input[:, :, 0].std())
-    print(batch_y[:, :, 0].mean())
-    print(batch_y[:, :, 0].std())
+    print(batch_output[:, :, 0].mean())
+    print(batch_output[:, :, 0].std())
+    print(batch_input[:, :, 0].mean())
+    print(batch_input[:, :, 0].std())
+    # print(batch_y[:, :, 0].mean())
+    # print(batch_y[:, :, 0].std())
 
     plt.figure()
     #plt.plot(batch_input[0,:,0])

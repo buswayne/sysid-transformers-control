@@ -4,7 +4,7 @@ from control.matlab import *
 
 def random_signal(nstep):
     # random signal generation
-    a_range = [-100, 100]
+    a_range = [-180, 180]
     a = np.random.rand(nstep) * (a_range[1] - a_range[0]) + a_range[0]  # range for amplitude
 
     b_range = [10, 100]
