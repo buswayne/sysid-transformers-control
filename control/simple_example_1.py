@@ -8,6 +8,16 @@ from numba import float32, float64, jit, NumbaWarning, NumbaPerformanceWarning, 
 import numba
 import warnings
 
+import warnings
+
+# Disable all user warnings
+warnings.filterwarnings("ignore")
+
+# Your code goes here
+
+# Re-enable user warnings
+warnings.filterwarnings("default")
+
 warnings.simplefilter('ignore', category=(NumbaWarning, NumbaPerformanceWarning, NumbaDeprecationWarning))
 
 # plt.rcParams["font.family"] = "Times New Roman"

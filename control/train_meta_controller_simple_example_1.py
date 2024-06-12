@@ -9,6 +9,15 @@ from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
 import argparse
+import warnings
+
+# Disable all user warnings
+warnings.filterwarnings("ignore")
+
+# Your code goes here
+
+# Re-enable user warnings
+warnings.filterwarnings("default")
 #import wandb
 
 
@@ -19,11 +28,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.3", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.6", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.3", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.6", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
+    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')

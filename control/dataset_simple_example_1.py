@@ -11,6 +11,17 @@ import matplotlib.pyplot as plt
 from utils import prbs, random_signal
 from control.matlab import *
 from scipy.interpolate import interp1d
+from u_estimate import u_estimate
+
+import warnings
+
+# Disable all user warnings
+warnings.filterwarnings("ignore")
+
+# Your code goes here
+
+# Re-enable user warnings
+warnings.filterwarnings("default")
 
 class SimpleExample1Dataset(IterableDataset):
     def __init__(self, seq_len=1e6, normalize=False, dtype="float32", return_y=False):
@@ -43,65 +54,93 @@ class SimpleExample1Dataset(IterableDataset):
 
             choice = np.random.choice(choices)
 
+            choice = "white noise"
+
             if choice == "white noise":
                 n_steps = np.random.randint(2, 50)
-                u = np.random.normal(0, 140, t.shape)
+                u = np.random.normal(0, 1000, t.shape)
                 f = interp1d(t[::n_steps], u[::n_steps], kind='next',
                              bounds_error=False,
                              fill_value=0.0)
-                u = f(t)
+                # u = f(t)
             elif choice == "prbs":
                 u = prbs(len(t))
             elif choice == "random":
                 u = random_signal(len(t))
 
-            u = np.nan_to_num(u)
+            # u = np.nan_to_num(u)
             #print(np.isnan(u).sum())
             # System
             x, u, y = simulate_simple_example_1(t, u, perturbation=0.0)
 
-            # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
+            #### New
             s = tf('s')
-            tau = 0.5  # s
+            z = tf([1, 0], [1], dt=self.ts)
+            tau = 1  # s
             M = 1 / (1 + (tau / (2 * np.pi)) * s)
-            M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
+            M = c2d(M, self.ts, 'matched')
+            # M = M*(1 + 1e-2*(tau/(2*np.pi))*s) # add a high freq zero for inversion
+            W = 1 / (1 + (0.1 * tau / (2 * np.pi)) * s)
+            W = c2d(W, self.ts, 'matched')
+
+            U = u_estimate(u, self.ts)
+
+            L = minreal(minreal((1 - M) * M, verbose=False) * minreal(W * U ** -1, verbose=False), verbose=False)
+
+            # print('M', M)
+            # print('W', W)
+            # print('U', U)
+            # print('L', L)
+
+            M_proper = z * M
+
+            u_L = lsim(L, u, t)[0]
+            y_L = lsim(L, y, t)[0]
+
+            r_v = lsim(M_proper ** (-1), y_L, t)[0]
+
+            # # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
+            # s = tf('s')
+            # tau = 0.5  # s
+            # M = 1 / (1 + (tau / (2 * np.pi)) * s)
+            # M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
             # get virtual error
-            r_v = lsim(M ** (-1), y, t)[0]
-            e_v = (r_v - y).reshape(-1, 1)  # must be 2d
-            u = u.reshape(-1, 1)
+            # r_v = lsim(M ** (-1), y, t)[0]
+            e_v = (r_v - y_L).reshape(-1, 1)  # must be 2d
+            u_L = u_L.reshape(-1, 1)
             # e_v_integral = np.cumsum(e_v).reshape(-1,1)
 
             e_v = e_v.astype(self.dtype)
             # e_v_integral = e_v_integral.astype(self.dtype)
-            u = np.insert(u, 0, 1e-6)
-            u = u[:-1].astype(self.dtype)
-            y = y.astype(self.dtype)
+            u_L = np.insert(u_L, 0, 1e-6)
+            u_L = u_L[:-1].astype(self.dtype)
+            y_L = y_L.astype(self.dtype)
             r_v = r_v.astype(self.dtype)
 
             # lunghezza contesto 5
-            #start_idx = np.random.randint(500, len(e_v)-n_context)
-            start_idx = 0
+            start_idx = np.random.randint(500, len(e_v)-n_context)
+            # start_idx = 0
             e_v = e_v[start_idx:start_idx + n_context]
-            u = u[start_idx:start_idx + n_context]
-            y = y[start_idx:start_idx + n_context]
+            u_L = u_L[start_idx:start_idx + n_context]
+            y_L = y_L[start_idx:start_idx + n_context]
             r_v = r_v[start_idx:start_idx + n_context]
 
             # e_1 = e_v[1:].flatten()  #
             # e_2 = e_v[:-1].flatten()  #
 
             if self.normalize:
-                e_v = e_v / 34  # mean 0, std 10
-                u = u / 8000  # mean 0, std 17
+                e_v = e_v / 2.22  # mean 0, std 10
+                u_L = u_L / 118.5  # mean 0, std 17
                 # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
                 # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
             # input_vector = np.stack((e_1,e_2),axis=1)
             input_vector = e_v.reshape(-1, 1)
-            output_vector = u.reshape(-1, 1)
-            y = y.reshape(-1, 1)
+            output_vector = u_L.reshape(-1, 1)
+            y_L = y_L.reshape(-1, 1)
             r_v = r_v.reshape(-1, 1)
 
             if self.return_y:
-                yield torch.tensor(output_vector), torch.tensor(input_vector), torch.tensor(y), torch.tensor(r_v)
+                yield torch.tensor(output_vector), torch.tensor(input_vector), torch.tensor(y_L), torch.tensor(r_v)
             else:
                 yield torch.tensor(output_vector), torch.tensor(input_vector)
 
