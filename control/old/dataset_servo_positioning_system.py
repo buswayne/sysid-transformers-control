@@ -71,7 +71,6 @@ class ServoPositioningSystemDataset(IterableDataset):
             M = (1 + (0.001*tau / (2 * np.pi)) * s) / (1 + (tau / (2 * np.pi)) * s)
             M = c2d(M, Ts)
             z = tf('z')
-<<<<<<< Updated upstream
 
             u_downsampled = u[::int(Ts_f / Ts)]
             y_downsampled = y[::int(Ts_f/Ts), 0]
@@ -95,7 +94,6 @@ class ServoPositioningSystemDataset(IterableDataset):
             # consider that u is the ouput to be predicted by the transformer, e_v is the input
             # yield torch.tensor(u), torch.tensor(np.concatenate((e_v, e_v_integral),axis=1))#, torch.tensor(y)
             yield torch.tensor(u), torch.tensor(e_v_integral)
-=======
             # y_downsampled = y[::int(Ts_f/Ts), 0]
             # r_v = lsim((z * M) ** (-1), y_downsampled, t[::int(Ts_f/Ts)])[0]
             # e_v = (r_v - y_downsampled).reshape(-1,1)  # must be 2d
@@ -141,7 +139,6 @@ class ServoPositioningSystemDataset(IterableDataset):
 
             #yield torch.tensor(u), torch.tensor(e_v)#, torch.tensor(y)
             yield torch.tensor(input_vector), torch.tensor(output_vector)
->>>>>>> Stashed changes
 
 if __name__ == "__main__":
     # train_ds = WHDataset(nx=2, seq_len=32, mag_range=(0.5, 0.96),

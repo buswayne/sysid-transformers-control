@@ -127,6 +127,7 @@ class GPTConfig:
     n_y: int = 1
     dropout: float = 0.0
     bias: bool = True  # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+    reg_u_weight: float = 0.0
 
 
 class GPT(nn.Module):
@@ -135,6 +136,8 @@ class GPT(nn.Module):
         super().__init__()
         assert config.block_size is not None
         self.config = config
+
+        self.reg_u_weight = config.reg_u_weight
 
         self.transformer = nn.ModuleDict(dict(
             wte=nn.Linear(config.n_u + config.n_y, config.n_embd),  # we process continuous data
@@ -197,7 +200,7 @@ class GPT(nn.Module):
         if compute_loss:
             # if we are given some desired targets also calculate the loss
             batch_y_pred = self.lm_head(x)
-            loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :])
+            loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :]) + self.reg_u_weight * F.mse_loss(batch_y_pred[:, 1:, :], batch_y_pred[:, :-1, :])
             #loss = F.mse_loss(batch_y, batch_y_pred)
             #loss = F.cross_entropy(batch_y_pred.view(-1, batch_y_pred.size(-1)), targets.view(-1), ignore_index=-1)
         else:

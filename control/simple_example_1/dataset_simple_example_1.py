@@ -1,3 +1,4 @@
+import copy
 import math
 import time
 
@@ -17,6 +18,7 @@ import warnings
 
 # Disable all user warnings
 warnings.filterwarnings("ignore")
+warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
 
 # Your code goes here
 
@@ -71,7 +73,8 @@ class SimpleExample1Dataset(IterableDataset):
             # u = np.nan_to_num(u)
             #print(np.isnan(u).sum())
             # System
-            x, u, y = simulate_simple_example_1(t, u, perturbation=0.0)
+            u, y = simulate_simple_example_1(t, u, perturbation=0.0)
+
 
             #### New
             s = tf('s')
@@ -83,9 +86,13 @@ class SimpleExample1Dataset(IterableDataset):
             W = 1 / (1 + (0.1 * tau / (2 * np.pi)) * s)
             W = c2d(W, self.ts, 'matched')
 
-            U = u_estimate(u, self.ts)
 
-            L = minreal(minreal((1 - M) * M, verbose=False) * minreal(W * U ** -1, verbose=False), verbose=False)
+            integrator = (self.ts / 2) * (z + 1) / (z - 1)
+            u = lsim(integrator**-1, u, t)[0] # input to be learned without modifying anything
+
+            # U = u_estimate(u, self.ts)
+
+            L = M#minreal(minreal((1 - M) * M, verbose=False) * minreal(W * U ** -1, verbose=False), verbose=False)
 
             # print('M', M)
             # print('W', W)
@@ -97,6 +104,9 @@ class SimpleExample1Dataset(IterableDataset):
             u_L = lsim(L, u, t)[0]
             y_L = lsim(L, y, t)[0]
 
+            # u_L = u
+            # y_L = y
+
             r_v = lsim(M_proper ** (-1), y_L, t)[0]
 
             # # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
@@ -106,11 +116,14 @@ class SimpleExample1Dataset(IterableDataset):
             # M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
             # get virtual error
             # r_v = lsim(M ** (-1), y, t)[0]
+
             e_v = (r_v - y_L).reshape(-1, 1)  # must be 2d
+
             u_L = u_L.reshape(-1, 1)
             # e_v_integral = np.cumsum(e_v).reshape(-1,1)
 
             e_v = e_v.astype(self.dtype)
+            # e_v = np.cumsum(e_v)
             # e_v_integral = e_v_integral.astype(self.dtype)
             u_L = np.insert(u_L, 0, 1e-6)
             u_L = u_L[:-1].astype(self.dtype)
@@ -129,8 +142,8 @@ class SimpleExample1Dataset(IterableDataset):
             # e_2 = e_v[:-1].flatten()  #
 
             if self.normalize:
-                e_v = e_v / 2.22  # mean 0, std 10
-                u_L = u_L / 118.5  # mean 0, std 17
+                e_v = e_v / 430#2.22  # mean 0, std 10
+                u_L = u_L / 423075#118.5  # mean 0, std 17
                 # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
                 # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
             # input_vector = np.stack((e_1,e_2),axis=1)

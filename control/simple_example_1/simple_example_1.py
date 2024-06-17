@@ -48,19 +48,37 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     num = [data['num_1']]
     den = [data['den_1'], data['den_2'], data['den_3']]
 
+    ts = t[1] - t[0]
+
     s = tf('s')
+    z = tf([1, 0], [1], ts)
     G = tf(num, den)
-    tau = stepinfo(G)['SettlingTime'] / 5
-    G_proper = G * (1 + 5e-1 * (tau / (2 * np.pi)) * s) ** 2
+    # G_proper = z ** 2 * c2d(G, ts, 'matched')
+    # tau = stepinfo(G)['SettlingTime'] / 5
+    # G_proper = G * (1 + 5e-1 * (tau / (2 * np.pi)) * s) ** 2
+
+    # amplitude = np.random.uniform(-100,100)
+    # r = amplitude * np.ones(t.shape)
+    #
+    #
+    # tau = 1  # s
+    # M = 1 / (1 + (tau / (2 * np.pi)) * s)
+    # M = c2d(M, ts, 'matched')
+    #
+    # y_d = lsim(M, r, t)[0]
+
+    # print(G)
+    # u = lsim(G_proper**-1, y_d, t)[0]
 
     # u = lsim(G_proper**(-1), u, t)[0]
 
-    y, _, x = lsim(G, u, t)
+    # y = lsim(G_proper, u, t)[0]
+    y = lsim(G, u, t)[0]
 
     if save_params:
-        return x, u, y, data
+        return u, y, data
     else:
-        return x, u, y
+        return u, y
 
 if __name__ == "__main__":
     # Generate random forced inputs for simulation

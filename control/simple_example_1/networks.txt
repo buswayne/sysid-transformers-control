@@ -1,0 +1,14 @@
+1.8 -> weight_decay=0.0, reg_u_weight=0, trained with G**-1
+1.9 ->  weight_decay=0.0, reg_u_weight=0, val_loss=0.0052
+
+1.10 -> weight_decay=1e-4, reg_u_weight=0, val_loss=0.0075
+1.11 -> weight_decay=1e-3, reg_u_weight=0, val_loss=0.0031
+1.12 -> weight_decay=1e-2, reg_u_weight=0, val_loss=0.0040
+1.13 -> weight_decay=1e-1, reg_u_weight=0, val_loss=0.0034
+
+1.14 -> weight_decay=0, reg_u_weight=1, val_loss=0.0075
+1.15 -> weight_decay=0, reg_u_weight=0.5, val_loss=0.03
+1.16 -> weight_decay=0, reg_u_weight=0.1, val_loss=0.01
+1.17 -> weight_decay=0, reg_u_weight=10, val_loss=0.33
+
+1.18 -> weight_decay=0, reg_u_weight=10, val_loss=0.33, e_v_integrator

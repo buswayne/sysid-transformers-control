@@ -1,12 +1,9 @@
-from pathlib import Path
 import time
 import torch
 import numpy as np
 import math
 from functools import partial
-from dataset_servo_positioning_system import ServoPositioningSystemDataset
-from torch.utils.data import DataLoader
-from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
+from transformer_onestep import warmup_cosine_lr
 import tqdm
 import argparse
 #import wandb
