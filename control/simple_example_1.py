@@ -39,19 +39,25 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     den = [data['den_1'], data['den_2'], data['den_3']]
     G = tf(num, den)
 
-    y, _, x = lsim(G, u, t)
+    s = tf('s')
+    tau = 0.05  # s
+    M = 1 / (1 + (tau / (2 * np.pi)) * s)
+    M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)
+
+    u_prefilter = lsim(M, u, t)[0]
+    y, _, x = lsim(G, u_prefilter, t)
 
     if save_params:
-        return x, u, y, data
+        return x, u_prefilter, y, data
     else:
-        return x, u, y
+        return x, u_prefilter, y
 
 if __name__ == "__main__":
     # Generate random forced inputs for simulation
     ts = 1e-2
     T = 5
     t = np.arange(0, T, ts)
-    u = np.random.normal(0, 10, t.shape)
+    u = np.random.normal(0, 1000, t.shape)
 
     print(len(u))
     # Perturbation factor for initial conditions
@@ -62,8 +68,8 @@ if __name__ == "__main__":
 
     plt.subplot(211)
     plt.plot(t, y)
-    plt.legend([r'$x_1 = \theta$', '$x_2 = \omega$', '$x_3 = I$'])
+    plt.legend(['y'])
     plt.subplot(212)
     plt.plot(t, u)
-    plt.legend(['$u = V$'])
+    plt.legend(['u'])
     plt.show()
