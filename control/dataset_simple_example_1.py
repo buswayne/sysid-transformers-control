@@ -47,7 +47,7 @@ class SimpleExample1Dataset(IterableDataset):
 
             # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
             s = tf('s')
-            tau = 0.05  # s
+            tau = 0.5  # s
             M = 1 / (1 + (tau / (2 * np.pi)) * s)
             M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
             # get virtual error

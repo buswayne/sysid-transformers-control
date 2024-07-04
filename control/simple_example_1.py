@@ -38,19 +38,21 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     num = [data['num_1']]
     den = [data['den_1'], data['den_2'], data['den_3']]
     G = tf(num, den)
+    #print(G)
 
     s = tf('s')
-    tau = 0.05  # s
+    tau = 0.5  # s
     M = 1 / (1 + (tau / (2 * np.pi)) * s)
     M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)
-
+    #print(M)
     u_prefilter = lsim(M, u, t)[0]
-    y, _, x = lsim(G, u_prefilter, t)
+    y, _, x = lsim(G, u, t)
+    y_prefilter = lsim(M, y, t)[0]
 
     if save_params:
-        return x, u_prefilter, y, data
+        return x, u_prefilter, y_prefilter, data
     else:
-        return x, u_prefilter, y
+        return x, u, y
 
 if __name__ == "__main__":
     # Generate random forced inputs for simulation
