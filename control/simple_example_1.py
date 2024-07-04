@@ -68,10 +68,19 @@ if __name__ == "__main__":
     # Simulate the system trajectory using the model
     x, u, y = simulate_simple_example_1(t, u, perturbation)
 
+    s = tf('s')
+    tau = 0.5  # s
+    M = 1 / (1 + (tau / (2 * np.pi)) * s)
+    M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
+    # get virtual error
+    r_v = lsim(M ** (-1), y, t)[0]
+    e_v = (r_v - y).reshape(-1, 1)  # must be 2d
+
+
     plt.subplot(211)
-    plt.plot(t, y)
-    plt.legend(['y'])
+    plt.plot(t, r_v)
+    plt.legend(['r_v'])
     plt.subplot(212)
-    plt.plot(t, u)
-    plt.legend(['u'])
+    plt.plot(t, e_v)
+    plt.legend(['e_v'])
     plt.show()
