@@ -41,7 +41,7 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     #print(G)
 
     s = tf('s')
-    tau = 0.5  # s
+    tau = 0.05 # s
     M = 1 / (1 + (tau / (2 * np.pi)) * s)
     M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)
     #print(M)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     x, u, y = simulate_simple_example_1(t, u, perturbation)
 
     s = tf('s')
-    tau = 0.5  # s
+    tau = 0.05 # s
     M = 1 / (1 + (tau / (2 * np.pi)) * s)
     M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
     # get virtual error

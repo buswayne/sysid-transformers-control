@@ -47,7 +47,7 @@ class SimpleExample1Dataset(IterableDataset):
 
             # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
             s = tf('s')
-            tau = 0.5  # s
+            tau = 0.05  # s
             M = 1 / (1 + (tau / (2 * np.pi)) * s)
             M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
             # get virtual error
@@ -73,7 +73,7 @@ class SimpleExample1Dataset(IterableDataset):
             # e_2 = e_v[:-1].flatten()  #
 
             if self.normalize:
-                e_v = e_v / 0.3  # mean 0, std 10
+                e_v = e_v / 6 # mean 0, std 10
                 u = u / 1000  # mean 0, std 17
                 # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
                 # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
