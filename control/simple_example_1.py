@@ -7,6 +7,7 @@ from control.matlab import *
 from numba import float32, float64, jit, NumbaWarning, NumbaPerformanceWarning, NumbaDeprecationWarning
 import numba
 import warnings
+from control import tf, step_response
 
 warnings.simplefilter('ignore', category=(NumbaWarning, NumbaPerformanceWarning, NumbaDeprecationWarning))
 
@@ -41,7 +42,7 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     #print(G)
 
     s = tf('s')
-    tau = 0.05 # s
+    tau = 0.5 # s
     M = 1 / (1 + (tau / (2 * np.pi)) * s)
     M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)
     #print(M)
@@ -52,7 +53,7 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     if save_params:
         return x, u_prefilter, y_prefilter, data
     else:
-        return x, u, y
+        return x, u_prefilter, y_prefilter
 
 if __name__ == "__main__":
     # Generate random forced inputs for simulation
@@ -66,21 +67,32 @@ if __name__ == "__main__":
     perturbation = 0.0
 
     # Simulate the system trajectory using the model
-    x, u, y = simulate_simple_example_1(t, u, perturbation)
+    x, u, y , G0 = simulate_simple_example_1(t, u, perturbation)
 
     s = tf('s')
-    tau = 0.05 # s
+    tau = 0.5 # s
     M = 1 / (1 + (tau / (2 * np.pi)) * s)
     M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
     # get virtual error
     r_v = lsim(M ** (-1), y, t)[0]
     e_v = (r_v - y).reshape(-1, 1)  # must be 2d
 
+    print(G0)
 
-    plt.subplot(211)
-    plt.plot(t, r_v)
-    plt.legend(['r_v'])
-    plt.subplot(212)
-    plt.plot(t, e_v)
-    plt.legend(['e_v'])
+    t1, y1 = step_response(G0)
+
+    # Plot the step response
+    plt.figure()
+    plt.plot(t1, y1)
+    plt.title('Step Response of G0')
+    plt.xlabel('Time (s)')
+    plt.grid(True)
     plt.show()
+
+    #plt.subplot(211)
+    #plt.plot(t, r_v)
+    #plt.legend(['r_v'])
+    #plt.subplot(212)
+    #plt.plot(t, e_v)
+    #plt.legend(['e_v'])
+    #plt.show()

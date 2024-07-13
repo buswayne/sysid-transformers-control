@@ -47,7 +47,7 @@ class SimpleExample1Dataset(IterableDataset):
 
             # Desired variable to be controlled is x1 = \theta. Let's compute virtual error
             s = tf('s')
-            tau = 0.05  # s
+            tau = 0.5  # s
             M = 1 / (1 + (tau / (2 * np.pi)) * s)
             M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
             # get virtual error
@@ -93,9 +93,9 @@ if __name__ == "__main__":
     #                      phase_range=(0, math.pi / 3),
     #                      system_seed=42, data_seed=445, fixed_system=False)
     # start = time.time()
-    train_ds = SimpleExample1Dataset(seq_len=500, normalize=True)
+    train_ds = SimpleExample1Dataset(seq_len=500, normalize=True,return_y=True)
     train_dl = DataLoader(train_ds, batch_size=32)
-    batch_output, batch_input = next(iter(train_dl))
+    batch_output, batch_input, y = next(iter(train_dl))
 
     # print(batch_output.shape)
     # print(batch_input.shape)
@@ -109,13 +109,18 @@ if __name__ == "__main__":
     Ts = 1e-2
     T = batch_input.shape[1]*Ts  # ts*self.seq_len# * 2
     t = np.arange(0, T, Ts)
-
+    fig = plt.figure(figsize=(10, 8))
     for i in range(0,batch_output.shape[0]):
+
         plt.subplot(211)
-        plt.plot(t, batch_input[i, :, 0], c='tab:blue', alpha=0.2)
-        plt.legend(['$e_v$'])
-        plt.subplot(212)
         plt.plot(t, batch_output[i, :, 0], c='tab:blue', alpha=0.2)
-        plt.legend(['$u$'])
+        plt.legend(['$u$'], prop={'size': 15}, loc = 'upper right')
+        plt.subplot(212)
+        plt.plot(t, y[i, :, 0], c='tab:blue', alpha=0.2)
+        plt.legend(['$y$'], prop={'size': 15}, loc = 'upper right')
         plt.xlabel("$t$ [s]")
+        #plt.subplot(313)
+        #plt.plot(t, batch_input[i, :, 0], c='tab:blue', alpha=0.2)
+        #plt.legend(['$e_v$'], prop={'size': 15}, loc = 'upper right')
+        #plt.xlabel("$t$ [s]")
     plt.show()
