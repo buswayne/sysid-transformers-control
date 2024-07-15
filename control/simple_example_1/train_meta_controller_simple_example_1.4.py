@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from control.simple_example_1.simple_example_1 import SimpleExample1Dataset
+from dataset_simple_example_1 import SimpleExample1Dataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -26,13 +26,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Meta system identification with transformers')
 
     # Overall
-    parser.add_argument('--model-dir', type=str, default="out", metavar='S',
+    parser.add_argument('--model-dir', type=str, default="../out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.13", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.33", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.13", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.33", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -78,7 +78,7 @@ if __name__ == '__main__':
                         help='number of iterations (default: 1000)')
     parser.add_argument('--lr', type=float, default=6e-4, metavar='LR',
                         help='learning rate (default: 1e-4)')
-    parser.add_argument('--weight-decay', type=float, default=1e-1, metavar='D',
+    parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
     parser.add_argument('--eval-interval', type=int, default=500, metavar='N',
                         help='batch size (default:32)')
@@ -147,12 +147,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True, signal='prbs', use_prefilter=True)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True, signal='prbs', use_prefilter=True)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 

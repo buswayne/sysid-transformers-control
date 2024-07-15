@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from control.simple_example_1.simple_example_1 import SimpleExample1Dataset
+from dataset_simple_example_1 import SimpleExample1Dataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -26,11 +26,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Meta system identification with transformers')
 
     # Overall
-    parser.add_argument('--model-dir', type=str, default="out", metavar='S',
+    parser.add_argument('--model-dir', type=str, default="../out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.15", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.35", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.15", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.35", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--bias', action='store_true', default=False,
                         help='bias in model')
-    parser.add_argument('--reg_u_weight', type=float, default=.5, metavar='N',
+    parser.add_argument('--reg_u_weight', type=float, default=0.0, metavar='N',
                         help='bias in model')
 
     # Training
@@ -147,17 +147,17 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True, signal='random', use_prefilter=True)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True, signal='random', use_prefilter=True)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
-                      bias=cfg.bias, dropout=cfg.dropout, reg_u_weight=cfg.reg_u_weight)  # start with model_args from command line
+                      bias=cfg.bias, dropout=cfg.dropout)  # start with model_args from command line
 
     if cfg.init_from == "scratch":
         gptconf = GPTConfig(**model_args)

@@ -7,7 +7,7 @@ def random_signal(nstep):
     a_range = [-180, 180]
     a = np.random.rand(nstep) * (a_range[1] - a_range[0]) + a_range[0]  # range for amplitude
 
-    b_range = [10, 100]
+    b_range = [20, 20]
     b = np.random.rand(nstep) * (b_range[1] - b_range[0]) + b_range[0]  # range for frequency
     b = np.round(b)
     b = b.astype(int)

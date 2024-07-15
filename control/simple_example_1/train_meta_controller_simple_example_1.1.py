@@ -28,9 +28,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="../out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.19", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.40", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.19", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.40", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=500, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=1000, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -76,7 +76,7 @@ if __name__ == '__main__':
                         help='number of iterations (default: 1M)')
     parser.add_argument('--warmup-iters', type=int, default=10_000, metavar='N',
                         help='number of iterations (default: 1000)')
-    parser.add_argument('--lr', type=float, default=6e-4, metavar='LR',
+    parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
@@ -102,8 +102,6 @@ if __name__ == '__main__':
     # Other settings
     cfg.beta1 = 0.9
     cfg.beta2 = 0.95
-
-    print('Quiiiiiiiii', cfg.reg_u_weight)
 
     print(cfg.seq_len)
 
@@ -149,12 +147,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True, signal='white noise', use_prefilter=True)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True, signal='white noise', use_prefilter=True)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 

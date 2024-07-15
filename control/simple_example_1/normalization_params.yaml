@@ -1,0 +1,24 @@
+white noise:
+  no_prefilter:
+    e_std: 6.15
+    u_std: 1000
+  prefilter:
+    e_std: 4.5
+    u_std: 177
+    y_std: 25
+
+prbs:
+  no_prefilter:
+    e_std: 4.22
+    u_std: 100
+  prefilter:
+    e_std: 4
+    u_std: 88
+
+random:
+  no_prefilter:
+    e_std: 2.6
+    u_std: 103
+  prefilter:
+    e_std: 2.27
+    u_std: 67.5

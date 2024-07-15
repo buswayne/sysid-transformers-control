@@ -33,6 +33,8 @@ class LayerNorm(nn.Module):
         return F.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
 
 
+
+
 class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
@@ -200,7 +202,9 @@ class GPT(nn.Module):
         if compute_loss:
             # if we are given some desired targets also calculate the loss
             batch_y_pred = self.lm_head(x)
-            loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :]) + self.reg_u_weight * F.mse_loss(batch_y_pred[:, 1:, :], batch_y_pred[:, :-1, :])
+            # loss = F.smooth_l1_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :], beta=5)
+            # loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :]) + self.reg_u_weight * F.mse_loss(batch_y_pred[:, 1:, :], batch_y_pred[:, :-1, :])
+            loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :])
             #loss = F.mse_loss(batch_y, batch_y_pred)
             #loss = F.cross_entropy(batch_y_pred.view(-1, batch_y_pred.size(-1)), targets.view(-1), ignore_index=-1)
         else:
