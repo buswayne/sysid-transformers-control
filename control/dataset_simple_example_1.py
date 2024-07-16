@@ -1,14 +1,8 @@
-import math
-import time
-
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, IterableDataset
-import control  # pip install python-control, pip install slycot (optional)
-from lti import drss_matrices, dlsim
-from simple_example_1 import simulate_simple_example_1
+from control.simple_example_1.simple_example_1 import simulate_simple_example_1
 import matplotlib.pyplot as plt
-from utils import prbs
 from control.matlab import *
 from scipy.interpolate import interp1d
 

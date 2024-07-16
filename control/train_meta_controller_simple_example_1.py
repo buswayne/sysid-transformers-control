@@ -19,9 +19,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_simple_example_1_prefilter5", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller5_simple_example_1", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_simple_example_1_prefilter5", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller5_simple_example_1", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')

@@ -51,9 +51,9 @@ def simulate_simple_example_1(t, u, perturbation, save_params=False, process_noi
     y_prefilter = lsim(M, y, t)[0]
 
     if save_params:
-        return x, u_prefilter, y_prefilter, data
+        return x, u, y, data
     else:
-        return x, u_prefilter, y_prefilter
+        return x, u, y
 
 if __name__ == "__main__":
     # Generate random forced inputs for simulation
