@@ -1,15 +1,10 @@
-import math
 import time
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import torch
-import numpy as np
 from torch.utils.data import DataLoader, IterableDataset
-import control  # pip install python-control, pip install slycot (optional)
-from lti import drss_matrices, dlsim
-from campi_example_1 import simulate_campi_example_1
+from control.campi_example_1.campi_example_1 import simulate_campi_example_1
 import matplotlib.pyplot as plt
-from utils import prbs
 from control.matlab import *
 
 

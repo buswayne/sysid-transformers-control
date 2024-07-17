@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, IterableDataset
-from control.simple_example_1.simple_example_1 import simulate_simple_example_1
+from simple_example_1 import simulate_simple_example_1
 import matplotlib.pyplot as plt
 from control.matlab import *
 from scipy.interpolate import interp1d
@@ -88,11 +88,11 @@ if __name__ == "__main__":
     #                      system_seed=42, data_seed=445, fixed_system=False)
     # start = time.time()
     train_ds = SimpleExample1Dataset(seq_len=500, normalize=True,return_y=True)
-    train_dl = DataLoader(train_ds, batch_size=32)
+    train_dl = DataLoader(train_ds, batch_size=2)
     batch_output, batch_input, y = next(iter(train_dl))
 
-    # print(batch_output.shape)
-    # print(batch_input.shape)
+    print(batch_output.shape)
+    print(batch_input.shape)
     print(batch_output[:, :, 0].mean())
     print(batch_output[:, :, 0].std())
     print(batch_input[:, :, 0].mean())

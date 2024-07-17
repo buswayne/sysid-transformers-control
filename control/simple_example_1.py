@@ -67,7 +67,7 @@ if __name__ == "__main__":
     perturbation = 0.0
 
     # Simulate the system trajectory using the model
-    x, u, y , G0 = simulate_simple_example_1(t, u, perturbation)
+    x, u, y = simulate_simple_example_1(t, u, perturbation)
 
     s = tf('s')
     tau = 0.5 # s
@@ -77,22 +77,12 @@ if __name__ == "__main__":
     r_v = lsim(M ** (-1), y, t)[0]
     e_v = (r_v - y).reshape(-1, 1)  # must be 2d
 
-    print(G0)
 
-    t1, y1 = step_response(G0)
 
-    # Plot the step response
-    plt.figure()
-    plt.plot(t1, y1)
-    plt.title('Step Response of G0')
-    plt.xlabel('Time (s)')
-    plt.grid(True)
+    plt.subplot(211)
+    plt.plot(t, r_v)
+    plt.legend(['r_v'])
+    plt.subplot(212)
+    plt.plot(t, e_v)
+    plt.legend(['e_v'])
     plt.show()
-
-    #plt.subplot(211)
-    #plt.plot(t, r_v)
-    #plt.legend(['r_v'])
-    #plt.subplot(212)
-    #plt.plot(t, e_v)
-    #plt.legend(['e_v'])
-    #plt.show()

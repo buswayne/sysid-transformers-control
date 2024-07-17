@@ -163,38 +163,43 @@ class TSTransformer(nn.Module):
         self.decoder = TransformerDecoder(config.n_embd, config.n_head, config.n_layer,
                                           dropout=config.dropout, bias=config.bias)
 
-        self.encoder_wte = nn.Linear(config.n_u + config.n_y, config.n_embd)
+        self.encoder_wte = nn.Linear(config.n_u + config.n_y + 1, config.n_embd)
         self.encoder_wpe = nn.Embedding(config.seq_len_ctx, config.n_embd)
         #self.decoder_wte = nn.Linear(config.n_u + config.n_y, config.n_embd)
-        self.decoder_wte = nn.Linear(config.n_u, config.n_embd)
+        self.decoder_wte = nn.Linear(config.n_u + 1, config.n_embd)
         self.decoder_wpe = nn.Embedding(config.seq_len_new, config.n_embd)
         self.lm_head = nn.Linear(config.n_embd, config.n_y, bias=True)  # keep bias here maybe?
 
-    def embed_ctx(self, y, u):
+    def embed_ctx(self, y, u, r):
         device = u.device
         b, t, nu = u.shape
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0)
-        yu = torch.cat((y, u), dim=-1)
-        tok_emb = self.encoder_wte(yu)
+        # yu = torch.cat((y, u), dim=-1)
+        # tok_emb = self.encoder_wte(yu)
+        yur = torch.cat((y, u, r), dim=-1)
+        tok_emb = self.encoder_wte(yur)
         pos_emb = self.encoder_wpe(pos)
         src = tok_emb + pos_emb  # perhaps dropout of this?
         return src
 
-    def embed_new(self, u_new):
-        device = u_new.device
-        b, t_new, nu = u_new.shape
+    def embed_new(self, y_new, r_new):
+        device = y_new.device
+        b, t_new, nu = y_new.shape
         pos_new = torch.arange(0, t_new, dtype=torch.long, device=device).unsqueeze(0)
+        # tok_emb_new = self.decoder_wte(y_new)
 
         #yu_new = torch.cat((y_new, u_new), dim=-1)
         #tok_emb_new = self.decoder_wte(yu_new)
-        tok_emb_new = self.decoder_wte(u_new)
+        yr_new = torch.cat((y_new, r_new), dim=-1)
+        tok_emb_new = self.decoder_wte(yr_new)
+
         pos_emb_new = self.decoder_wpe(pos_new)
         tgt = tok_emb_new + pos_emb_new
         return tgt
 
-    def forward(self, y, u, u_new):
-        src = self.embed_ctx(y, u)  # perhaps dropout of this?
-        tgt = self.embed_new(u_new)  # perhaps dropout of this?
+    def forward(self, y, u, r, y_new, r_new):
+        src = self.embed_ctx(y, u, r)  # perhaps dropout of this?
+        tgt = self.embed_new(y_new, r_new)  # perhaps dropout of this?
         mem = self.encoder(src)
         output = self.decoder(tgt, mem)
         y_new_sim = self.lm_head(output)

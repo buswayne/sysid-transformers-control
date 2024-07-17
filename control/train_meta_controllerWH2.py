@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset_simple_example_1 import SimpleExample1Dataset
+from wh_dataset import WHDataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -14,14 +14,14 @@ import argparse
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Meta system identification with transformers')
+    parser = argparse.ArgumentParser(description='Meta system control with transformers')
 
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller5_simple_example_1", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_wh2", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller5_simple_example_1", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_wh2", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -136,12 +136,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 0.5)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = SimpleExample1Dataset(seq_len=cfg.seq_len, normalize=True)
+    val_ds = WHDataset(seq_len=cfg.seq_len)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 
