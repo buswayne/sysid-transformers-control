@@ -12,8 +12,8 @@ from lti import drss_matrices, dlsim
 class WHDataset(IterableDataset):
     def __init__(self, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
                  strictly_proper=True, normalize=True, dtype="float32",
-                 fixed_system=False, system_seed=None, data_seed=None,  return_y=False, tau =1,
-                 return_system = False, **mdlargs):
+                 fixed_system=False, system_seed=None, data_seed=None,  return_y=False,
+                 fixed_u = False, tau =1, **mdlargs):
         super(WHDataset).__init__()
         self.nx = nx
         self.nu = nu
@@ -31,8 +31,8 @@ class WHDataset(IterableDataset):
         self.fixed_system = fixed_system  # same model at each iteration (classical identification)
         self.mdlargs = mdlargs
         self.return_y = return_y
-        self.return_system = return_system
         self.tau = tau
+        self.fixed_u = fixed_u
 
     def __iter__(self):
 
@@ -50,6 +50,10 @@ class WHDataset(IterableDataset):
         n_out = 1
         n_hidden = 32
         n_skip = 200
+
+        ts = 1e-2
+        T = 20  # ts*self.seq_len# * 2
+        t = np.arange(0, T, ts)
 
         if self.fixed_system:  # same model at each step, generate only once!
             w1 = self.system_rng.normal(size=(n_hidden, n_in)) / np.sqrt(n_in) * 5 / 3
@@ -70,6 +74,9 @@ class WHDataset(IterableDataset):
                                strictly_proper=False,
                                rng=self.system_rng,
                                **self.mdlargs)
+
+        if self.fixed_u :
+            u = np.random.normal(0, 1000, t.shape)
 
         while True:  # infinite dataset
 
@@ -95,14 +102,14 @@ class WHDataset(IterableDataset):
 
             #u = np.random.randn(self.seq_len + n_skip, 1)  # input to be improved (filtered noise, multisine, etc)
             #u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
-            u = self.data_rng.normal(size=(self.seq_len, 1))
+            #u = self.data_rng.normal(size=(self.seq_len, 1))
             #print(u.shape)
-            ts = 1e-2
-            T = 20  # ts*self.seq_len# * 2
-            t = np.arange(0, T, ts)
-            u = np.random.normal(0, 1000, t.shape)
+
+                if not self.fixed_u :
+                    u = np.random.normal(0, 1000, t.shape)
             #print(u.shape)
             u = u.reshape(-1,1)
+
             # G1
             y1 = dlsim(*G1, u)
             y1 = (y1 - y1[:].mean(axis=0)) / (y1[:].std(axis=0) + 1e-6)
@@ -130,9 +137,11 @@ class WHDataset(IterableDataset):
 
             e_v = e_v.astype(self.dtype)
 
-            u = np.insert(u, 0, 1e-6)
+
             u = u[:-1].astype(self.dtype)
-            y = y.astype(self.dtype)
+            y= y[1:].astype(self.dtype)
+            r_v = r_v[1:].astype(self.dtype)
+            e_v = e_v[1:].astype(self.dtype)
 
             start_idx = 0
             e_v = e_v[start_idx:start_idx + n_context]
@@ -148,18 +157,9 @@ class WHDataset(IterableDataset):
             y = y.reshape(-1, 1)
             input_vector = e_v.reshape(-1, 1)
 
-            system = {
-                'G1' : G1,
-                'w1' : w1,
-                'b1' : b1,
-                'w2' : w2,
-                'b2' : b2,
-                'G2' : G2
-            }
+
             if self.return_y:
                 yield torch.tensor(output_vector), torch.tensor(input_vector), torch.tensor(y)
-            elif self.return_system :
-                return system
             else :
                 yield torch.tensor(output_vector), torch.tensor(input_vector)
 
@@ -169,7 +169,7 @@ class WHDataset(IterableDataset):
 if __name__ == "__main__":
 
     train_ds = WHDataset(seq_len=500, return_y= True)
-    train_dl = DataLoader(train_ds, batch_size=10)
+    train_dl = DataLoader(train_ds, batch_size=6)
     batch_u, batch_e_v, batch_y = next(iter(train_dl))
 
     print(batch_y.shape)
@@ -191,16 +191,18 @@ if __name__ == "__main__":
     for i in range(0,batch_u.shape[0]):
 
         plt.subplot(211)
-        plt.plot(t, batch_u[i, :, 0], c='tab:blue', alpha=0.2)
+        plt.plot(t, batch_u[i, :, 0], c='tab:blue', alpha=0.4)
         plt.legend(['$u$'], prop={'size': 15}, loc = 'upper right')
         plt.xlim(0, 5)
         plt.ylim(-5, 5)
+        plt.grid()
         plt.subplot(212)
-        plt.plot(t, batch_e_v[i, :, 0], c='tab:blue', alpha=0.2)
-        plt.legend(['$e_{v}$'], prop={'size': 15}, loc = 'upper right')
+        plt.plot(t, batch_y[i, :, 0], c='tab:blue', alpha=0.4)
+        plt.legend(['$y$'], prop={'size': 15}, loc = 'upper right')
         plt.xlabel("$t$ [s]")
         plt.xlim(0, 5)
         plt.ylim(-5, 5)
+        plt.grid()
         #plt.subplot(313)
         #plt.plot(t, batch_input[i, :, 0], c='tab:blue', alpha=0.2)
         #plt.legend(['$e_v$'], prop={'size': 15}, loc = 'upper right')

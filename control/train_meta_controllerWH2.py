@@ -136,7 +136,7 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 0.5)
+    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 0.5, fixed_u = True)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
