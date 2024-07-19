@@ -139,7 +139,9 @@ def _dlsim(A, B, C, D, u, x0):
         u_step = u[idx]
         y[idx] = C.dot(x_step) + D.dot(u_step)
         x_step = A.dot(x_step) + B.dot(u_step)
+
     return y
+
 
 
 def dlsim(A, B, C, D, u, x0=None):

@@ -12,8 +12,8 @@ from lti import drss_matrices, dlsim
 class WHDataset(IterableDataset):
     def __init__(self, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
                  strictly_proper=True, normalize=True, dtype="float32",
-                 fixed_system=False, system_seed=None, data_seed=None,  return_y=False,
-                 fixed_u = False, tau =1, **mdlargs):
+                 fixed_system=False, system_seed=None, data_seed=None,  return_y=False, fixed_u = False,
+                  tau =1, **mdlargs):
         super(WHDataset).__init__()
         self.nx = nx
         self.nu = nu
@@ -26,8 +26,8 @@ class WHDataset(IterableDataset):
         self.random_order = random_order  # random number of states from 1 to nx
         self.system_seed = system_seed
         self.data_seed = data_seed
-        self.system_rng = np.random.default_rng(system_seed)  # source of randomness for model generation
-        self.data_rng = np.random.default_rng(data_seed)  # source of randomness for model generation
+        self.system_rng = np.random.default_rng(0)#system_seed)  # source of randomness for model generation
+        self.data_rng = np.random.default_rng(0)#data_seed)  # source of randomness for model generation
         self.fixed_system = fixed_system  # same model at each iteration (classical identification)
         self.mdlargs = mdlargs
         self.return_y = return_y
@@ -54,6 +54,8 @@ class WHDataset(IterableDataset):
         ts = 1e-2
         T = 20  # ts*self.seq_len# * 2
         t = np.arange(0, T, ts)
+        #if self.fixed_u :
+        #    u = np.random.normal(0, 1000, t.shape)
 
         if self.fixed_system:  # same model at each step, generate only once!
             w1 = self.system_rng.normal(size=(n_hidden, n_in)) / np.sqrt(n_in) * 5 / 3
@@ -75,8 +77,7 @@ class WHDataset(IterableDataset):
                                rng=self.system_rng,
                                **self.mdlargs)
 
-        if self.fixed_u :
-            u = np.random.normal(0, 1000, t.shape)
+
 
         while True:  # infinite dataset
 
@@ -105,10 +106,10 @@ class WHDataset(IterableDataset):
             #u = self.data_rng.normal(size=(self.seq_len, 1))
             #print(u.shape)
 
-                if not self.fixed_u :
-                    u = np.random.normal(0, 1000, t.shape)
-            #print(u.shape)
-            u = u.reshape(-1,1)
+            if self.fixed_u:
+                np.random.seed(0)
+            u = np.random.normal(0, 1000, t.shape)
+            u = u.reshape(-1, 1)
 
             # G1
             y1 = dlsim(*G1, u)
@@ -168,10 +169,9 @@ class WHDataset(IterableDataset):
 
 if __name__ == "__main__":
 
-    train_ds = WHDataset(seq_len=500, return_y= True)
-    train_dl = DataLoader(train_ds, batch_size=6)
+    train_ds = WHDataset(seq_len=500, return_y= True, fixed_system=True, fixed_u=True, tau = 1)
+    train_dl = DataLoader(train_ds, batch_size=1)
     batch_u, batch_e_v, batch_y = next(iter(train_dl))
-
     print(batch_y.shape)
     print(batch_u.shape)
     print(batch_e_v.shape)
