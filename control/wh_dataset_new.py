@@ -12,7 +12,7 @@ from wh_simulate import simulate_wh
 class WHDatasetnew(IterableDataset):
     def __init__(self, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
                  strictly_proper=True, normalize=True, dtype="float32",
-                 fixed=False, system_seed=0, data_seed=None, return_y=False, use_prefilter = False,
+                 fixed=False, system_seed=None, data_seed=None, return_y=False, use_prefilter = False,
                  return_system=False,
                  tau=1, **mdlargs):  # system and data seed = None
         super(WHDatasetnew).__init__()
@@ -37,7 +37,8 @@ class WHDatasetnew(IterableDataset):
         self.return_system = return_system
         self.data = None
         self.ts = 1e-2
-        self.T = 20
+        #self.T = 20
+        self.T = 5
         self.t = np.arange(0, self.T, self.ts)
 
 
@@ -69,7 +70,7 @@ class WHDatasetnew(IterableDataset):
         u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
         u = u.reshape(-1, 1)
 
-        u, y, G1, G2, w1, b1, w2, b2 = simulate_wh(t, u)
+        u, y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2 = simulate_wh(t, u)
 
 
         s = tf('s')
@@ -91,7 +92,7 @@ class WHDatasetnew(IterableDataset):
             y_L = y
 
         r_v = lsim(M_proper ** (-1), y_L, t)[0]
-        r_v = np.insert(r_v[:-1], 0, 0)
+        #r_v = np.insert(r_v[:-1], 0, 0)
 
         e_v = (r_v - y_L).reshape(-1, 1)
 
@@ -118,6 +119,8 @@ class WHDatasetnew(IterableDataset):
         y = y_L.reshape(-1, 1)
         r = r_v.reshape(-1, 1)
 
+        #print(A1) #i used this to see if it returned the same system at every call
+
         return torch.tensor(y), torch.tensor(u), torch.tensor(e)
 
     def __getitem__(self, idx):
@@ -126,16 +129,25 @@ class WHDatasetnew(IterableDataset):
         else:
             return self._generate_sample()
 
-
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self.__getitem__(i)
 
 
 if __name__ == "__main__":
     train_ds = WHDatasetnew(seq_len=500, normalize=True, use_prefilter=False, fixed=True)
     train_dl = DataLoader(train_ds, batch_size=32)
     batch_y, batch_u, batch_e = next(iter(train_dl))
+    #batch_y, batch_u, batch_e, w1, b1, w2. b2, A1, B1, C1, D1, A2, B2, C2, D2 = next(iter(train_dl))
 
-    print(batch_y.shape)
-    print(batch_y.dtype)
+    print('END OF FIRST ONE  ')
+
+    train_ds2 = WHDatasetnew(seq_len=500, normalize=True, use_prefilter=False, fixed=True)
+    train_dl2 = DataLoader(train_ds2, batch_size=32)
+    batch_y2, batch_u2, batch_e2 = next(iter(train_dl))
+
+    #print(batch_y.shape)
+    #print(batch_y.dtype)
     # print(batch_u.shape)
     # print(batch_y[3,8,0])
 

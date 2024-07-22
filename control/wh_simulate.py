@@ -56,6 +56,15 @@ def simulate_wh(t,u):
                        rng=system_rng
                        )
 
+    A1 = [*G1[0]]
+    B1 = [*G1[1]]
+    C1 = [*G1[2]]
+    D1 = [*G1[3]]
+    A2 = [*G2[0]]
+    B2 = [*G2[1]]
+    C2 = [*G2[2]]
+    D2 = [*G2[3]]
+
     # G1
     y1 = dlsim(*G1, u)
     y1 = (y1 - y1[n_skip:].mean(axis=0)) / (y1[n_skip:].std(axis=0) + 1e-6)
@@ -70,7 +79,7 @@ def simulate_wh(t,u):
     u = u[n_skip:]
     y = y3[n_skip:]
 
-    return u,y,G1, G2, w1, b1, w2, b2
+    return u, y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2
 
 
 

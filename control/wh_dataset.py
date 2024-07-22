@@ -138,7 +138,7 @@ class WHDataset(IterableDataset):
             s = tf('s')
             tau = self.tau # s
             M = 1 / (1 + (tau / (2 * np.pi)) * s)
-            M = c2d(M, self.Ts, 'matched')
+            M = c2d(M, Ts, 'matched')
             M_proper = z*M
             # get virtual error
             t = np.arange(0, len(y) * Ts, Ts)
