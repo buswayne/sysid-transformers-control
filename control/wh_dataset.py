@@ -11,7 +11,7 @@ from wh_simulate import simulate_wh
 
 class WHDataset(IterableDataset):
     def __init__(self, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
-                 strictly_proper=True, normalize=True, dtype="float32",
+                 strictly_proper=True, normalize=False, dtype="float32",
                  fixed=False, system_seed=None, data_seed=None, return_y=False, use_prefilter = False,
                  return_system=False,
                  tau=1, **mdlargs):  # system and data seed = None
@@ -98,10 +98,10 @@ class WHDataset(IterableDataset):
 
         u_L = u_L.reshape(-1, 1)
 
-        if self.normalize:
-            y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
-            e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
-            u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
+        #if self.normalize:
+           # y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
+           # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
+           # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
 
         u = u[:-1].astype(self.dtype)
         y = y[1:].astype(self.dtype)
@@ -135,16 +135,22 @@ class WHDataset(IterableDataset):
 
 
 if __name__ == "__main__":
-    train_ds = WHDataset(seq_len=500, normalize=True, use_prefilter=False, fixed=True)
+    train_ds = WHDataset(seq_len=500, normalize= False, use_prefilter=False, fixed=True)
     train_dl = DataLoader(train_ds, batch_size=32)
     batch_y, batch_u, batch_e = next(iter(train_dl))
     #batch_y, batch_u, batch_e, w1, b1, w2. b2, A1, B1, C1, D1, A2, B2, C2, D2 = next(iter(train_dl))
 
     print('END OF FIRST ONE  ')
 
-    train_ds2 = WHDataset(seq_len=500, normalize=True, use_prefilter=False, fixed=True)
+    train_ds2 = WHDataset(seq_len=500, normalize=False, use_prefilter=False, fixed=True)
     train_dl2 = DataLoader(train_ds2, batch_size=32)
     batch_y2, batch_u2, batch_e2 = next(iter(train_dl))
+    print('y mean:', batch_y[:, :, 0].mean())
+    print('y std:', batch_y[:, :, 0].std())
+    print('u mean:', batch_u[:, :, 0].mean())
+    print('u std:', batch_u[:, :, 0].std())
+    print('e mean:', batch_e[:, :, 0].mean())
+    print('e std:', batch_e[:, :, 0].std())
 
     #print(batch_y.shape)
     #print(batch_y.dtype)
@@ -153,12 +159,7 @@ if __name__ == "__main__":
 
     # batch_y, batch_u, batch_e = next(iter(train_dl))
     # print(batch_y[3, 8, 0])
-    # print('y mean:', batch_y[:, :, 0].mean())
-    # print('y std:', batch_y[:, :, 0].std())
-    # print('u mean:', batch_u[:, :, 0].mean())
-    # print('u std:', batch_u[:, :, 0].std())
-    # print('e mean:', batch_e[:, :, 0].mean())
-    # print('e std:', batch_e[:, :, 0].std())
+
 
     plt.figure(figsize=(7, 5))
     # plt.plot(batch_input[0,:,0])
