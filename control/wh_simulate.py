@@ -19,13 +19,14 @@ plt.rcParams['axes.grid']=True
 plt.rcParams['axes.xmargin']=0
 
 
-def nn_fun(x):
-    out = x @ w1.transpose() + b1
-    out = np.tanh(out)
-    out = out @ w2.transpose() + b2
-    return out
 
-def simulate_wh():
+
+def simulate_wh(t,u):
+    def nn_fun(x):
+        out = x @ w1.transpose() + b1
+        out = np.tanh(out)
+        out = out @ w2.transpose() + b2
+        return out
 
     n_in = 1
     n_out = 1
@@ -33,7 +34,7 @@ def simulate_wh():
     n_skip = 200
     nx = 5
     random_order = True
-    system_rng = np.random.default_rng(None)
+    system_rng = np.random.default_rng(0)
     strictly_proper = True
 
     w1 = system_rng.normal(size=(n_hidden, n_in)) / np.sqrt(n_in) * 5 / 3
@@ -55,7 +56,21 @@ def simulate_wh():
                        rng=system_rng
                        )
 
-    return G1, G2, w1, b1, w2, b2
+    # G1
+    y1 = dlsim(*G1, u)
+    y1 = (y1 - y1[n_skip:].mean(axis=0)) / (y1[n_skip:].std(axis=0) + 1e-6)
+
+
+    # F
+    y2 = nn_fun(y1)
+
+    # G2
+    y3 = dlsim(*G2, y2)
+
+    u = u[n_skip:]
+    y = y3[n_skip:]
+
+    return u,y,G1, G2, w1, b1, w2, b2
 
 
 
@@ -65,40 +80,23 @@ if __name__ == "__main__":
     ts = 1e-2
     T = 5
     t = np.arange(0, T, ts)
-    u = np.random.normal(0, 1000, t.shape)
+    data_rng = np.random.default_rng(0)
+    seq_len = 500
+    n_skip = 200
+    u = data_rng.normal(size=(seq_len + n_skip, 1))
+    u = u.reshape(-1, 1)
 
 
     # Simulate the system trajectory using the model
-    G1, G2, w1, b1, w2, b2 = simulate_wh()
+    u,y, G1, G2, w1, b1, w2, b2 = simulate_wh(t,u)
 
-    s = tf('s')
-    tau = 1 # s
-    M = 1 / (1 + (tau / (2 * np.pi)) * s)
-    M = M * (1 + 1e-2 * (tau / (2 * np.pi)) * s)  # add a high freq zero for inversion
 
-    u = u.reshape(-1, 1)
-    print(u.shape)
-    # G1
-    y1 = dlsim(*G1, u)
-    y1 = (y1 - y1[:].mean(axis=0)) / (y1[:].std(axis=0) + 1e-6)
-    print(y1.shape)
-    # F
-    y2 = nn_fun(y1)
-    print(y2.shape)
-    # G2
-    y3 = dlsim(*G2, y2)
-    print(y3.shape)
-    r_v = lsim(M ** (-1), y3, t)[0]
-    r_v= r_v.reshape(-1, 1)
-    e_v = (r_v - y3).reshape(-1, 1)
-    print(r_v.shape)
-    print(e_v.shape)
 
     plt.subplot(211)
     plt.plot(t, u)
     plt.legend(['u'])
     plt.subplot(212)
-    plt.plot(t, e_v)
+    plt.plot(t, y)
     plt.legend(['e_v'])
     plt.show()
 

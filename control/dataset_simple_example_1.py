@@ -48,10 +48,10 @@ class SimpleExample1Dataset(IterableDataset):
             r_v = lsim(M ** (-1), y, t)[0]
             e_v = (r_v - y).reshape(-1, 1)  # must be 2d
             u = u.reshape(-1, 1)
-            # e_v_integral = np.cumsum(e_v).reshape(-1,1)
+            e_v_integral = np.cumsum(e_v).reshape(-1,1)
 
             e_v = e_v.astype(self.dtype)
-            # e_v_integral = e_v_integral.astype(self.dtype)
+            e_v_integral = e_v_integral.astype(self.dtype)
             u = np.insert(u, 0, 1e-6)
             u = u[:-1].astype(self.dtype)
             y = y.astype(self.dtype)
@@ -60,6 +60,7 @@ class SimpleExample1Dataset(IterableDataset):
             #start_idx = np.random.randint(0, len(e_v)-n_context)
             start_idx = 0
             e_v = e_v[start_idx:start_idx + n_context]
+            e_v_integral = e_v_integral[start_idx:start_idx + n_context]
             u = u[start_idx:start_idx + n_context]
             y = y[start_idx:start_idx + n_context]
 
@@ -67,12 +68,16 @@ class SimpleExample1Dataset(IterableDataset):
             # e_2 = e_v[:-1].flatten()  #
 
             if self.normalize:
-                e_v = e_v / 6 # mean 0, std 10
+                e_v = e_v / 3 # mean 0, std 10
                 u = u / 1000  # mean 0, std 17
-                # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
+                e_v_integral = e_v_integral/ 220
+                #e_v_integral = (e_v_integral - e_v_integral.mean(axis=0)) / (e_v_integral.std(axis=0) + 1e-6)
+                #e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
                 # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
             # input_vector = np.stack((e_1,e_2),axis=1)
-            input_vector = e_v.reshape(-1, 1)
+            #input_vector = e_v.reshape(-1, 1)
+            #input_vector = e_v_integral.reshape(-1, 1)
+            input_vector = np.concatenate((e_v, e_v_integral), axis=1)
             output_vector = u.reshape(-1, 1)
             y = y.reshape(-1, 1)
 
@@ -89,14 +94,17 @@ if __name__ == "__main__":
     # start = time.time()
     train_ds = SimpleExample1Dataset(seq_len=500, normalize=True,return_y=True)
     train_dl = DataLoader(train_ds, batch_size=2)
-    batch_output, batch_input, y = next(iter(train_dl))
+    batch_output, batch_input, y= next(iter(train_dl))
 
     print(batch_output.shape)
     print(batch_input.shape)
+    #print(batch_ei.shape)
     print(batch_output[:, :, 0].mean())
     print(batch_output[:, :, 0].std())
     print(batch_input[:, :, 0].mean())
     print(batch_input[:, :, 0].std())
+    #print(batch_ei[:, :, 0].mean())
+    #print(batch_ei[:, :, 0].std())
 
     plt.figure()
     #plt.plot(batch_input[0,:,0])

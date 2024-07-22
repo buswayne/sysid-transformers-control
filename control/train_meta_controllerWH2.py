@@ -19,11 +19,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_wh2.1", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_wh2_2", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_wh2.1", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_wh2_2", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -136,12 +136,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, fixed_u =True, tau = 0.5)
+    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 0.5)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = WHDataset(seq_len=cfg.seq_len)
+    val_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 0.5)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 

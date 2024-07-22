@@ -19,9 +19,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller5_simple_example_1", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller8_simple_example_1", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller5_simple_example_1", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller8_simple_example_1", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # Dataset
     parser.add_argument('--nx', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--nu', type=int, default=1, metavar='N',
+    parser.add_argument('--nu', type=int, default=2, metavar='N',
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
