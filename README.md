@@ -7,6 +7,15 @@
         * Decoder-only with y, u, r
         * The one working $\rightarrow$ adding noise
         * Encoder-decoder with y, u, e
+        * Encoder-decoder with y, u, r
+* Nonlinear
+    * Fixed G
+        * Decoder-only with e, u [nome_modello, validation loss]
+        * Decoder-only with e_integral, u
+        * Decoder-only with e, e_integral, u
+        * Decoder-only with y, u, r
+        * The one working $\rightarrow$ adding noise
+        * Encoder-decoder with y, u, e
         * Encoder-decoder with y, u, r      
 
 # For control and filtering
