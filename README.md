@@ -1,7 +1,9 @@
 # Control experiments
-* Lineare
+* Linear
     * Fixed G
         * Decoder-only with e_v, u
+        * Decoder-only with e_integral, u
+        * Decoder-only with e, e_integral, u
         * Decoder-only with y, u, r
         * The one working $\rightarrow$ adding noise
         * Encoder-decoder with y, u, e_v
