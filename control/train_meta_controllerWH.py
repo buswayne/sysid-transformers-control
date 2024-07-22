@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from wh_dataset_old import WHDataset
+from wh_dataset import WHDataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -136,12 +136,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 1, use_prefilter = False, normalize = True)
+    train_ds = WHDataset(seq_len=cfg.seq_len, fixed= True, tau = 1, use_prefilter = False)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 1, use_prefilter = False, normalize = True)
+    val_ds = WHDataset(seq_len=cfg.seq_len, fixed= True, tau = 1, use_prefilter = False)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 

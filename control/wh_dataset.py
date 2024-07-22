@@ -11,7 +11,7 @@ from wh_simulate import simulate_wh
 
 class WHDataset(IterableDataset):
     def __init__(self, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
-                 strictly_proper=True, normalize=False, dtype="float32",
+                 strictly_proper=True, normalize=True, dtype="float32",
                  fixed=False, system_seed=None, data_seed=None, return_y=False, use_prefilter = False,
                  return_system=False,
                  tau=1, **mdlargs):  # system and data seed = None
@@ -54,13 +54,22 @@ class WHDataset(IterableDataset):
         data_u = []
         data_e = []
 
-        for _ in range(32):  # Adjust the range based on the desired size of the fixed dataset
-            y, u, e = self._generate_sample()
-            data_y.append(y)
-            data_u.append(u)
-            data_e.append(e)
+        if self.return_y:
+            for _ in range(32):
+                # Adjust the range based on the desired size of the fixed dataset
+              y, u, e = self._generate_sample()
+              data_y.append(y)
+              data_u.append(u)
+              data_e.append(e)
 
-        return torch.stack(data_y), torch.stack(data_u), torch.stack(data_e)
+            return torch.stack(data_y), torch.stack(data_u), torch.stack(data_e)
+        else :
+            for _ in range(32):
+              u, e = self._generate_sample()
+              data_u.append(u)
+              data_e.append(e)
+            return torch.stack(data_u), torch.stack(data_e)
+
 
     def _generate_sample(self):
         # np.random.seed(42)
@@ -98,21 +107,23 @@ class WHDataset(IterableDataset):
 
         u_L = u_L.reshape(-1, 1)
 
-        #if self.normalize:
+        if self.normalize:
+            y_L = ( y_L - 6.60 ) / 0.83
+            e_v = e_v / 5
            # y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
            # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
            # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
 
-        u = u[:-1].astype(self.dtype)
-        y = y[1:].astype(self.dtype)
+        u_L = u_L[:-1].astype(self.dtype)
+        y_L = y_L[1:].astype(self.dtype)
         r_v = r_v[1:].astype(self.dtype)
         e_v = e_v[1:].astype(self.dtype)
 
-        start_idx = 0
-        e_v = e_v[start_idx:start_idx + self.seq_len]
-        u_L = u_L[start_idx:start_idx + self.seq_len]
-        y_L = y_L[start_idx:start_idx + self.seq_len]
-        r_v = r_v[start_idx:start_idx + self.seq_len]
+        start_idx = 0 # that -1 is to be checked, without it created batch_u of shape [1,499,32] and other signals with shape[1,500,32]
+        e_v = e_v[start_idx:start_idx + self.seq_len-1]
+        u_L = u_L[start_idx:start_idx + self.seq_len-1]
+        y_L = y_L[start_idx:start_idx + self.seq_len-1]
+        r_v = r_v[start_idx:start_idx + self.seq_len-1]
 
         e = e_v.reshape(-1, 1)
         u = u_L.reshape(-1, 1)
@@ -120,12 +131,16 @@ class WHDataset(IterableDataset):
         r = r_v.reshape(-1, 1)
 
         #print(A1) #i used this to see if it returned the same system at every call
-
-        return torch.tensor(y), torch.tensor(u), torch.tensor(e)
+        if self.return_y :
+            return torch.tensor(y), torch.tensor(u), torch.tensor(e)
+        else :
+            return torch.tensor(u), torch.tensor(e)
 
     def __getitem__(self, idx):
-        if self.fixed:
+        if self.fixed and self.return_y:
             return self.data[0][idx], self.data[1][idx], self.data[2][idx]
+        elif self.fixed and not self.return_y :
+            return self.data[0][idx], self.data[1][idx]
         else:
             return self._generate_sample()
 
@@ -135,18 +150,19 @@ class WHDataset(IterableDataset):
 
 
 if __name__ == "__main__":
-    train_ds = WHDataset(seq_len=500, normalize= False, use_prefilter=False, fixed=True)
+    train_ds = WHDataset(seq_len=500, use_prefilter=False, fixed=True, return_y = False)
     train_dl = DataLoader(train_ds, batch_size=32)
-    batch_y, batch_u, batch_e = next(iter(train_dl))
-    #batch_y, batch_u, batch_e, w1, b1, w2. b2, A1, B1, C1, D1, A2, B2, C2, D2 = next(iter(train_dl))
+    #batch_y, batch_u, batch_e = next(iter(train_dl))
+    batch_u, batch_e = next(iter(train_dl))
 
-    print('END OF FIRST ONE  ')
+    ##THIS IS TO CHECK THAT IT RE-USES THE SAME SYSTEM AS IN train_ds
+    #print('END OF FIRST ONE  ')
+    #train_ds2 = WHDataset(seq_len=500, normalize=True, use_prefilter=False, fixed=True)
+    #train_dl2 = DataLoader(train_ds2, batch_size=32)
+    #batch_y2, batch_u2, batch_e2 = next(iter(train_dl))
 
-    train_ds2 = WHDataset(seq_len=500, normalize=False, use_prefilter=False, fixed=True)
-    train_dl2 = DataLoader(train_ds2, batch_size=32)
-    batch_y2, batch_u2, batch_e2 = next(iter(train_dl))
-    print('y mean:', batch_y[:, :, 0].mean())
-    print('y std:', batch_y[:, :, 0].std())
+    #print('y mean:', batch_y[:, :, 0].mean())
+    #print('y std:', batch_y[:, :, 0].std())
     print('u mean:', batch_u[:, :, 0].mean())
     print('u std:', batch_u[:, :, 0].std())
     print('e mean:', batch_e[:, :, 0].mean())
@@ -154,7 +170,8 @@ if __name__ == "__main__":
 
     #print(batch_y.shape)
     #print(batch_y.dtype)
-    # print(batch_u.shape)
+    print(batch_u.shape)
+    print(batch_e.shape)
     # print(batch_y[3,8,0])
 
     # batch_y, batch_u, batch_e = next(iter(train_dl))

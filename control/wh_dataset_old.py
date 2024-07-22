@@ -185,11 +185,12 @@ class WHDataset_old(IterableDataset):
 
 if __name__ == "__main__":
 
-    train_ds = WHDataset(seq_len=500, return_y= True, fixed_system=True, return_system=True, tau = 1)
+    train_ds = WHDataset_old(seq_len=500, return_y= True, fixed_system=True, return_system=True, tau = 1)
     train_dl = DataLoader(train_ds, batch_size=1)
     batch_u, batch_e_v, batch_y, w1, b1, w2, b2, A1, B1, C1, D1, A2, B2, C2, D2 = next(iter(train_dl))
     #batch_u, batch_e_v, batch_y = next(iter(train_dl))
-
+    print(batch_u.shape)
+    print(batch_e_v.shape)
     print(batch_e_v[:, :, 0].mean())  #without normalization e_v has mean 6.5 and 1.71 std on fixed system
     print(batch_e_v[:, :, 0].std())
     print(batch_u[:, :, 0].mean())
@@ -201,7 +202,7 @@ if __name__ == "__main__":
     print(A1)
     #print('G2 :', G2)
 
-    test_fixed_working = 1
+    test_fixed_working = 0
     if test_fixed_working :
         train_ds2 = WHDataset_old(seq_len=500, return_y=True, fixed_system=True, return_system=True, tau=1)
         train_dl2 = DataLoader(train_ds2, batch_size=1)
