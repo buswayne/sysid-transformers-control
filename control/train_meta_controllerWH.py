@@ -23,7 +23,7 @@ if __name__ == '__main__':
                         help='Saved model name')
     parser.add_argument('--in-file', type=str, default="ckpt_wh1_f", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
+    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--eval-interval', type=int, default=500, metavar='N',
+    parser.add_argument('--eval-interval', type=int, default=100, metavar='N',
                         help='batch size (default:32)')
     parser.add_argument('--eval-iters', type=int, default=100, metavar='N',
                         help='batch size (default:32)')
@@ -77,7 +77,7 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Compute
-    parser.add_argument('--threads', type=int, default=16,
+    parser.add_argument('--threads', type=int, default=15,
                         help='number of CPU threads (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -203,10 +203,11 @@ if __name__ == '__main__':
 
     get_lr = partial(warmup_cosine_lr, lr=cfg.lr, min_lr=cfg.min_lr,
                      warmup_iters=cfg.warmup_iters, lr_decay_iters=cfg.lr_decay_iters)
+
     time_start = time.time()
 
-    for iter_num in range(cfg.max_iters - 1):
-        for i, (batch_u, batch_e) in enumerate(train_dl):
+    for iter_num in range(cfg.max_iters):
+        for (batch_u, batch_e) in enumerate(train_dl):
 
             if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
                 loss_val = estimate_loss()
@@ -238,20 +239,12 @@ if __name__ == '__main__':
             if device_type == "cuda":
                 batch_u = batch_u.pin_memory().to(device, non_blocking=True)
                 batch_e = batch_e.pin_memory().to(device, non_blocking=True)
-
             batch_u_pred, loss = model(batch_e, batch_u)
             LOSS_ITR.append(loss.item())
-            if iter_num % 10 == 0:
+            if iter_num % 100 == 0:
                 print(f"\n{iter_num=} {loss=:.6f} {loss_val=:.6f} {lr_iter=}\n")
                 if cfg.log_wandb:
                     wandb.log({"loss": loss, "loss_val": loss_val})
-
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-
-            if iter_num == cfg.max_iters-1:
-                break
 
     time_loop = time.time() - time_start
     print(f"\n{time_loop=:.2f} seconds.")

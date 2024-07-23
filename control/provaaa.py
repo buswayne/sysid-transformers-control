@@ -5,11 +5,10 @@ import numpy as np
 import math
 from functools import partial
 # from dataset import WHDataset, LinearDynamicalDataset
-from dataset_sim_simple_example_1_modified import SimpleExample1Dataset
+from control.simple_example_1_sim.dataset_sim_simple_example_1_modified import SimpleExample1Dataset
 from torch.utils.data import DataLoader
 from transformer_sim import Config, TSTransformer
 from transformer_onestep import warmup_cosine_lr
-import tqdm
 import argparse
 import wandb
 

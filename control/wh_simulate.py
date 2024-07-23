@@ -67,8 +67,9 @@ def simulate_wh(t,u):
 
     # G1
     y1 = dlsim(*G1, u)
-    y1 = (y1 - y1[n_skip:].mean(axis=0)) / (y1[n_skip:].std(axis=0) + 1e-6)
-
+    y1 = (y1 - y1[:].mean(axis=0)) / (y1[:].std(axis=0) + 1e-6)
+    #print(y1.mean())
+    #print(y1.std())
 
     # F
     y2 = nn_fun(y1)
@@ -76,8 +77,8 @@ def simulate_wh(t,u):
     # G2
     y3 = dlsim(*G2, y2)
 
-    u = u[n_skip:]
-    y = y3[n_skip:]
+    u = u[:]
+    y = y3[:]
 
     return u, y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2
 
@@ -97,7 +98,7 @@ if __name__ == "__main__":
 
 
     # Simulate the system trajectory using the model
-    u,y, G1, G2, w1, b1, w2, b2 = simulate_wh(t,u)
+    u,y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2 = simulate_wh(t,u)
 
 
 

@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, IterableDataset
-from simple_example_1 import simulate_simple_example_1
+from simple_example_1_mine import simulate_simple_example_1
 import matplotlib.pyplot as plt
 from control.matlab import *
 from scipy.interpolate import interp1d

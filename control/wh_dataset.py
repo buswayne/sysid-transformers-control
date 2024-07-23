@@ -76,10 +76,15 @@ class WHDataset(IterableDataset):
 
         t = self.t
         n_skip = 200
+        # not sure about the utility of n_skip, keeping it for now
         u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
         u = u.reshape(-1, 1)
 
         u, y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2 = simulate_wh(t, u)
+
+        u = u[n_skip:]
+        y = y[n_skip:]
+
 
 
         s = tf('s')
@@ -109,7 +114,7 @@ class WHDataset(IterableDataset):
 
         if self.normalize:
             y_L = ( y_L - 6.60 ) / 0.83
-            e_v = e_v / 5
+            e_v = e_v / 1.8
            # y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
            # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
            # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
@@ -130,7 +135,7 @@ class WHDataset(IterableDataset):
         y = y_L.reshape(-1, 1)
         r = r_v.reshape(-1, 1)
 
-        #print(A1) #i used this to see if it returned the same system at every call
+        #print(A2) #i used this to see if it returned the same system at every call
         if self.return_y :
             return torch.tensor(y), torch.tensor(u), torch.tensor(e)
         else :
@@ -185,19 +190,19 @@ if __name__ == "__main__":
     t = np.arange(0, T, Ts)
 
     for i in range(0, batch_u.shape[0]):
-        plt.subplot(311)
+        plt.subplot(211)
         plt.plot(t, batch_u[i, :, 0], c='tab:blue', alpha=0.2)
         # plt.legend(['$e_v$'])
         plt.ylabel("$u_L$")
         plt.tick_params('x', labelbottom=False)
 
-        plt.subplot(312)
-        plt.plot(t, batch_y[i, :, 0], c='tab:blue', alpha=0.2)
+        #plt.subplot(312)
+        #plt.plot(t, batch_y[i, :, 0], c='tab:blue', alpha=0.2)
         # plt.legend(['$y$'])
-        plt.ylabel("$y_L$")
-        plt.tick_params('x', labelbottom=False)
+        #plt.ylabel("$y_L$")
+        #plt.tick_params('x', labelbottom=False)
 
-        plt.subplot(313)
+        plt.subplot(212)
         plt.plot(t, batch_e[i, :, 0], c='tab:blue', alpha=0.2)
         # plt.legend(['$u$'])
         plt.ylabel("$e_v$")

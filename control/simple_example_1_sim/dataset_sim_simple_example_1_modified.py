@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
-from simple_example_1 import simulate_simple_example_1
+from control.simple_example_1_sim.simple_example_1 import simulate_simple_example_1
 import matplotlib.pyplot as plt
 from utils import prbs, random_signal
 from control.matlab import *
