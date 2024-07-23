@@ -179,6 +179,7 @@ if __name__ == "__main__":
     print(batch_e.shape)
     # print(batch_y[3,8,0])
 
+
     # batch_y, batch_u, batch_e = next(iter(train_dl))
     # print(batch_y[3, 8, 0])
 

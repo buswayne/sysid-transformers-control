@@ -207,7 +207,7 @@ if __name__ == '__main__':
     time_start = time.time()
 
     for iter_num in range(cfg.max_iters):
-        for (batch_u, batch_e) in enumerate(train_dl):
+        for i, (batch_u, batch_e) in enumerate(train_dl):
 
             if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
                 loss_val = estimate_loss()
