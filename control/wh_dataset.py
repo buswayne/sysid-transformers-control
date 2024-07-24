@@ -7,6 +7,8 @@ import control  # pip install python-control, pip install slycot (optional)
 from control.matlab import *
 from lti import drss_matrices, dlsim
 from wh_simulate import simulate_wh
+from wh_simulate import fixed_wh_system
+
 
 
 class WHDataset(IterableDataset):
@@ -40,7 +42,11 @@ class WHDataset(IterableDataset):
         #self.T = 20
         self.T = 5
         self.t = np.arange(0, self.T, self.ts)
+        self.wh_system_fixed = fixed_wh_system()
 
+        # with this check i can see that it generates different batches, still using the same system
+        #G1 = self.wh_system_fixed['G1']
+        #print(G1)
 
         if self.fixed:
             self.data = self._generate_data()
@@ -80,7 +86,8 @@ class WHDataset(IterableDataset):
         u = self.data_rng.normal(size=(self.seq_len + n_skip, 1))
         u = u.reshape(-1, 1)
 
-        u, y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2 = simulate_wh(t, u)
+        #u, y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2 = simulate_wh(t, u)
+        u, y = simulate_wh(self.wh_system_fixed, u)
 
         u = u[n_skip:]
         y = y[n_skip:]
@@ -155,28 +162,31 @@ class WHDataset(IterableDataset):
 
 
 if __name__ == "__main__":
-    train_ds = WHDataset(seq_len=500, use_prefilter=False, fixed=True, return_y = False)
+    train_ds = WHDataset(seq_len=500, use_prefilter=False, fixed=False, return_y = False)
     train_dl = DataLoader(train_ds, batch_size=32)
     #batch_y, batch_u, batch_e = next(iter(train_dl))
     batch_u, batch_e = next(iter(train_dl))
 
-    ##THIS IS TO CHECK THAT IT RE-USES THE SAME SYSTEM AS IN train_ds
-    #print('END OF FIRST ONE  ')
-    #train_ds2 = WHDataset(seq_len=500, normalize=True, use_prefilter=False, fixed=True)
-    #train_dl2 = DataLoader(train_ds2, batch_size=32)
-    #batch_y2, batch_u2, batch_e2 = next(iter(train_dl))
 
-    #print('y mean:', batch_y[:, :, 0].mean())
-    #print('y std:', batch_y[:, :, 0].std())
+
     print('u mean:', batch_u[:, :, 0].mean())
     print('u std:', batch_u[:, :, 0].std())
     print('e mean:', batch_e[:, :, 0].mean())
     print('e std:', batch_e[:, :, 0].std())
 
+    ##THIS IS TO CHECK THAT IT RE-USES THE SAME SYSTEM AS IN train_ds
+    train_ds2 = WHDataset(seq_len=500, use_prefilter=False, fixed=False, return_y=False)
+    train_dl2 = DataLoader(train_ds2, batch_size=32)
+    batch_u2, batch_e2 = next(iter(train_dl))
+    print('u2 mean:', batch_u2[:, :, 0].mean())
+    print('u2 std:', batch_u2[:, :, 0].std())
+    print('e2 mean:', batch_e2[:, :, 0].mean())
+    print('e2 std:', batch_e2[:, :, 0].std())
+
     #print(batch_y.shape)
     #print(batch_y.dtype)
-    print(batch_u.shape)
-    print(batch_e.shape)
+    #print(batch_u.shape)
+    #print(batch_e.shape)
     # print(batch_y[3,8,0])
 
 
