@@ -1,7 +1,7 @@
 import math
 import torch
 import numpy as np
-from torch.utils.data import DataLoader, IterableDataset
+from torch.utils.data import DataLoader, IterableDataset, Dataset
 import matplotlib.pyplot as plt
 import control  # pip install python-control, pip install slycot (optional)
 from control.matlab import *
@@ -151,7 +151,7 @@ class WHDataset(IterableDataset):
 
     def __iter__(self):
         for i in range(len(self)):
-            yield self.__getitem__(i)
+           yield self.__getitem__(i)
 
 
 if __name__ == "__main__":

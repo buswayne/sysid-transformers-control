@@ -19,9 +19,9 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_wh1_f", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_wh1_prova2", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_wh1_f", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_wh1_prova2", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--eval-interval', type=int, default=100, metavar='N',
+    parser.add_argument('--eval-interval', type=int, default=30, metavar='N',
                         help='batch size (default:32)')
     parser.add_argument('--eval-iters', type=int, default=100, metavar='N',
                         help='batch size (default:32)')
@@ -206,13 +206,14 @@ if __name__ == '__main__':
 
     time_start = time.time()
 
-    for iter_num in range(cfg.max_iters):
-        for i, (batch_u, batch_e) in enumerate(train_dl):
+    for iter_num in range(iter_num, cfg.max_iters):
+        #for batch_u, batch_e in next(iter(train_dl)):
+        for batch_u, batch_e in train_dl:
 
             if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
                 loss_val = estimate_loss()
                 LOSS_VAL.append(loss_val)
-                print(f"\n{iter_num=} {loss_val=:.6f}\n")
+                print(f"\n{iter_num=} {loss_val=:.4f}\n")
                 if loss_val < best_val_loss:
                     best_val_loss = loss_val
                     checkpoint = {
@@ -241,10 +242,17 @@ if __name__ == '__main__':
                 batch_e = batch_e.pin_memory().to(device, non_blocking=True)
             batch_u_pred, loss = model(batch_e, batch_u)
             LOSS_ITR.append(loss.item())
-            if iter_num % 100 == 0:
+            if iter_num % 10 == 0:
                 print(f"\n{iter_num=} {loss=:.6f} {loss_val=:.6f} {lr_iter=}\n")
                 if cfg.log_wandb:
                     wandb.log({"loss": loss, "loss_val": loss_val})
+
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+            if iter_num == cfg.max_iters - 1:
+                break
 
     time_loop = time.time() - time_start
     print(f"\n{time_loop=:.2f} seconds.")

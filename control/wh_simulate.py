@@ -100,6 +100,10 @@ if __name__ == "__main__":
     # Simulate the system trajectory using the model
     u,y, A1, B1, C1, D1, A2, B2, C2, D2, w1, b1, w2, b2 = simulate_wh(t,u)
 
+    print(w2)
+    #print(D2)
+
+
 
 
     plt.subplot(211)
