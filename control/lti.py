@@ -129,31 +129,25 @@ signatures = [
 
 
 @jit(signatures, nopython=True, cache=True)
-def _dlsim(A, B, C, D, u, x0 ,return_x):
+def _dlsim(A, B, C, D, u, x0):
     seq_len = u.shape[0]
     nx, nu = B.shape
     ny, _ = C.shape
     y = empty(shape=(seq_len, ny), dtype=u.dtype)
-    x = empty(shape=(seq_len, nx), dtype=u.dtype)
-    x[0] = copy(x0)  # x_step = zeros((nx,), dtype=u.dtype)
+    x_step = copy(x0)  # x_step = zeros((nx,), dtype=u.dtype)
     for idx in range(seq_len):
         u_step = u[idx]
-        x_step = x[idx]
         y[idx] = C.dot(x_step) + D.dot(u_step)
-        if idx +1 < seq_len :
-            x[idx+1] = A.dot(x_step) + B.dot(u_step)
-
-    if return_x :
-        return y , x
-    else:
-        return y
+        x_step = A.dot(x_step) + B.dot(u_step)
+    return y
 
 
 
-def dlsim(A, B, C, D, u, x0=None, return_x = None):
+def dlsim(A, B, C, D, u, x0=None):
     if x0 is None:
         nx = A.shape[0]
         x0 = zeros((nx,), dtype=u.dtype)
-    if return_x is None:
-        return_x = False
-    return _dlsim(A, B, C, D, u, x0, return_x)
+    return _dlsim(A, B, C, D, u, x0)
+
+
+
