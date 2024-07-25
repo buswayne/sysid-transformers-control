@@ -4,9 +4,9 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from wh_dataset_old import WHDataset
+from wh_dataset import WHDataset
 from torch.utils.data import DataLoader
-from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
+from transformer_onestep_pid import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
 import argparse
 #import wandb
@@ -19,11 +19,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_wh3", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_wh_f3", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_wh3", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_wh_f3", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -37,7 +37,7 @@ if __name__ == '__main__':
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=500, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=1000, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -56,6 +56,12 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', type=float, default=0.0, metavar='LR',
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--bias', action='store_true', default=False,
+                        help='bias in model')
+    parser.add_argument('--use_p', type=bool, default=True, metavar='N',
+                        help='bias in model')
+    parser.add_argument('--use_i', type=bool, default=True, metavar='N',
+                        help='bias in model')
+    parser.add_argument('--use_d', type=bool, default=False, metavar='N',
                         help='bias in model')
 
     # Training
@@ -136,17 +142,17 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 0.1)
+    train_ds = WHDataset(seq_len=cfg.seq_len, fixed= False, tau = 1, use_prefilter = False)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = WHDataset(seq_len=cfg.seq_len)
+    val_ds = WHDataset(seq_len=cfg.seq_len, fixed= False, tau = 1, use_prefilter = False)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
-                      bias=cfg.bias, dropout=cfg.dropout)  # start with model_args from command line
+                      bias=cfg.bias, dropout=cfg.dropout, use_p=cfg.use_p, use_i=cfg.use_i, use_d=cfg.use_d)  # start with model_args from command line
 
     if cfg.init_from == "scratch":
         gptconf = GPTConfig(**model_args)

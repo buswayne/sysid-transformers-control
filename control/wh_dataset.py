@@ -12,37 +12,38 @@ from wh_simulate import fixed_wh_system
 
 
 class WHDataset(IterableDataset):
-    def __init__(self, nx=5, nu=1, ny=1, seq_len=600, random_order=True,
-                 strictly_proper=True, normalize=True, dtype="float32",
-                 fixed=False, system_seed=None, data_seed=None, return_y=False, use_prefilter = False,
-                 return_system=False,
+    def __init__(self, nx=5, nu=1, ny=1, seq_len=500,
+                  normalize=True, dtype="float32",
+                 fixed=False, data_seed=None, return_y=False, use_prefilter = False,
+                  use_e_int = False,
                  tau=1, **mdlargs):  # system and data seed = None
         super(WHDataset).__init__()
         self.nx = nx
         self.nu = nu
         self.ny = ny
         self.seq_len = seq_len
-        self.strictly_proper = strictly_proper
         self.dtype = dtype
         self.normalize = normalize
-        self.strictly_proper = strictly_proper
-        self.random_order = random_order  # random number of states from 1 to nx
-        self.system_seed = system_seed
         self.data_seed = data_seed
-        self.system_rng = np.random.default_rng(system_seed)  # source of randomness for model generation
         self.data_rng = np.random.default_rng(data_seed)  # source of randomness for model generation
         self.fixed= fixed  # same model at each iteration (classical identification)
         self.mdlargs = mdlargs
         self.return_y = return_y
         self.tau = tau
         self.use_prefilter = use_prefilter
-        self.return_system = return_system
         self.data = None
         self.ts = 1e-2
         #self.T = 20
-        self.T = 5
+        self.T = self.seq_len * self.ts
         self.t = np.arange(0, self.T, self.ts)
         self.wh_system_fixed = fixed_wh_system()
+        self.use_e_int = use_e_int
+
+        ##UNUSED ARGUMENTS
+        # self.strictly_proper = strictly_proper
+        # self.random_order = random_order  # random number of states from 1 to nx
+        # self.system_seed = system_seed
+        # self.system_rng = np.random.default_rng(system_seed)  # source of randomness for model generation
 
         # with this check i can see that it generates different batches, still using the same system
         #G1 = self.wh_system_fixed['G1']
@@ -116,12 +117,14 @@ class WHDataset(IterableDataset):
         #r_v = np.insert(r_v[:-1], 0, 0)
 
         e_v = (r_v - y_L).reshape(-1, 1)
+        e_v_integral = np.cumsum(e_v).reshape(-1, 1)
 
         u_L = u_L.reshape(-1, 1)
 
         if self.normalize:
             y_L = ( y_L - 6.60 ) / 0.83
-            e_v = e_v / 1.8
+            e_v = e_v / 1.5
+            e_v_integral = (e_v_integral - 40 ) / 130
            # y = (y - y.mean(axis=0)) / (y.std(axis=0) + 1e-6)
            # e_v = (e_v - e_v.mean(axis=0)) / (e_v.std(axis=0) + 1e-6)
            # u = (u - u.mean(axis=0)) / (u.std(axis=0) + 1e-6)
@@ -130,21 +133,26 @@ class WHDataset(IterableDataset):
         y_L = y_L[1:].astype(self.dtype)
         r_v = r_v[1:].astype(self.dtype)
         e_v = e_v[1:].astype(self.dtype)
+        e_v_integral = e_v_integral[1:].astype(self.dtype)
 
         start_idx = 0 # that -1 is to be checked, without it created batch_u of shape [1,499,32] and other signals with shape[1,500,32]
         e_v = e_v[start_idx:start_idx + self.seq_len-1]
         u_L = u_L[start_idx:start_idx + self.seq_len-1]
         y_L = y_L[start_idx:start_idx + self.seq_len-1]
         r_v = r_v[start_idx:start_idx + self.seq_len-1]
+        e_v_integral = e_v_integral[start_idx : start_idx + self.seq_len-1 ]
 
         e = e_v.reshape(-1, 1)
         u = u_L.reshape(-1, 1)
         y = y_L.reshape(-1, 1)
         r = r_v.reshape(-1, 1)
+        e_v_integral = e_v_integral.reshape(-1,1)
 
         #print(A2) #i used this to see if it returned the same system at every call
         if self.return_y :
             return torch.tensor(y), torch.tensor(u), torch.tensor(e)
+        elif self.use_e_int :
+            return torch.tensor(u), torch.tensor(e_v_integral)
         else :
             return torch.tensor(u), torch.tensor(e)
 
@@ -157,12 +165,17 @@ class WHDataset(IterableDataset):
             return self._generate_sample()
 
     def __iter__(self):
-        for i in range(len(self)):
-           yield self.__getitem__(i)
+        while True:
+           yield self._generate_sample()
+
+
+    #def __iter__(self):
+    #    for i in range(len(self)):
+    #       yield self.__getitem__(i)
 
 
 if __name__ == "__main__":
-    train_ds = WHDataset(seq_len=500, use_prefilter=False, fixed=False, return_y = False)
+    train_ds = WHDataset(seq_len=500, use_prefilter=False, fixed=False, return_y = False, use_e_int= True)
     train_dl = DataLoader(train_ds, batch_size=32)
     #batch_y, batch_u, batch_e = next(iter(train_dl))
     batch_u, batch_e = next(iter(train_dl))
@@ -175,7 +188,7 @@ if __name__ == "__main__":
     print('e std:', batch_e[:, :, 0].std())
 
     ##THIS IS TO CHECK THAT IT RE-USES THE SAME SYSTEM AS IN train_ds
-    train_ds2 = WHDataset(seq_len=500, use_prefilter=False, fixed=False, return_y=False)
+    train_ds2 = WHDataset(seq_len=500, use_prefilter=False, fixed=False, return_y=False, use_e_int=True)
     train_dl2 = DataLoader(train_ds2, batch_size=32)
     batch_u2, batch_e2 = next(iter(train_dl))
     print('u2 mean:', batch_u2[:, :, 0].mean())
@@ -204,7 +217,7 @@ if __name__ == "__main__":
         plt.subplot(211)
         plt.plot(t, batch_u[i, :, 0], c='tab:blue', alpha=0.2)
         # plt.legend(['$e_v$'])
-        plt.ylabel("$u_L$")
+        plt.ylabel("$u$")
         plt.tick_params('x', labelbottom=False)
 
         #plt.subplot(312)

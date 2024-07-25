@@ -106,7 +106,6 @@ def fixed_wh_system(): ##SEEMS LIKE I CAN'T TRANSFORM TO TF G1 AND G2
     n_in = 1
     n_out = 1
     n_hidden = 32
-    n_skip = 200
     nx = 3
     random_order = True
     system_rng = np.random.default_rng(0)
@@ -168,8 +167,7 @@ def simulate_wh(system,u):
     # G2
     y3 = dlsim(*G2, y2)
 
-    u = u[:]
-    y = y3[:]
+    y = y3
 
     return u, y
 
