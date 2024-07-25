@@ -21,15 +21,16 @@ def VRFT_ry(u, y, M, B, W=None, preFilt=None, return_error=False):
     z = tf([1, 0], [1], dt=ts)
 
     M_inv = M**-1
-    while not isproper(M_inv):
-        M_inv = M_inv/z
 
     r_v = lsim(M_inv, y_L, t)[0]
     e_v = r_v - y_L
     theta = cp.Variable(3)
     u_theta = theta[0] * lsim(B[0], e_v, t)[0] + theta[1] * lsim(B[1], e_v, t)[0] + theta[2] * lsim(B[2], e_v, t)[0]
+    # theta = cp.Variable(1)
+    # u_theta = theta[0] * lsim(B[0], e_v, t)[0]
     cost = cp.sum_squares(u_L - u_theta)
-    prob = cp.Problem(cp.Minimize(cost))
+    constraints = [theta >= 0]
+    prob = cp.Problem(cp.Minimize(cost), constraints)
     prob.solve()
 
     theta_sol = theta.value

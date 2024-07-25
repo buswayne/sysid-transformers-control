@@ -3,7 +3,7 @@ white noise:
     e_std: 6.15
     u_std: 1000
   prefilter:
-    e_std: 4.5
+    e_std: 5
     u_std: 177
     y_std: 25
 

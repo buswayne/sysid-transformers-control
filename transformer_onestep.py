@@ -130,6 +130,9 @@ class GPTConfig:
     dropout: float = 0.0
     bias: bool = True  # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
     reg_u_weight: float = 0.0
+    use_p: bool = False
+    use_i: bool = False
+    use_d: bool = False
 
 
 class GPT(nn.Module):
@@ -138,8 +141,10 @@ class GPT(nn.Module):
         super().__init__()
         assert config.block_size is not None
         self.config = config
-
         self.reg_u_weight = config.reg_u_weight
+        self.use_p = config.use_p
+        self.use_i = config.use_i
+        self.use_d = config.use_d
 
         self.transformer = nn.ModuleDict(dict(
             wte=nn.Linear(config.n_u + config.n_y, config.n_embd),  # we process continuous data
@@ -159,6 +164,12 @@ class GPT(nn.Module):
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * config.n_layer))
 
+        if self.use_p:
+            self.proportional_coefficient = nn.Parameter(torch.ones(1))  # Learnable coefficient
+        if self.use_i:
+            self.integral_coefficient = nn.Parameter(torch.ones(1))  # Learnable coefficient
+        if self.use_d:
+            self.derivative_coefficient = nn.Parameter(torch.ones(1))
         # report number of parameters
         print("number of parameters: %.2fM" % (self.get_num_params() / 1e6,))
 
@@ -199,9 +210,26 @@ class GPT(nn.Module):
             x = block(x)
         x = self.transformer.ln_f(x)
 
+        # if we are given some desired targets also calculate the loss
+        x = self.lm_head(x)
+
+        if self.use_p or self.use_i or self.use_d:
+            batch_y_pred = torch.zeros_like(x)
+            if self.use_p:
+                proportional_term = self.proportional_coefficient * x
+                batch_y_pred = batch_y_pred + proportional_term
+            if self.use_i:
+                integral_term = self.integral_coefficient * torch.cumsum(x, dim=1)  # Integrate the output over the time dimension
+                batch_y_pred = batch_y_pred + integral_term
+            if self.use_d:
+                derivative_term = torch.zeros_like(x)
+                derivative_term[:, 1:, :] = self.derivative_coefficient * (x[:, 1:, :] - x[:, :-1, :])
+                batch_y_pred = batch_y_pred + derivative_term
+        else:
+            batch_y_pred = x
+
         if compute_loss:
-            # if we are given some desired targets also calculate the loss
-            batch_y_pred = self.lm_head(x)
+
             # loss = F.smooth_l1_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :], beta=5)
             # loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :]) + self.reg_u_weight * F.mse_loss(batch_y_pred[:, 1:, :], batch_y_pred[:, :-1, :])
             loss = F.mse_loss(batch_y[:, 1:, :], batch_y_pred[:, :-1, :])
@@ -209,7 +237,7 @@ class GPT(nn.Module):
             #loss = F.cross_entropy(batch_y_pred.view(-1, batch_y_pred.size(-1)), targets.view(-1), ignore_index=-1)
         else:
             # inference-time mini-optimization: only forward the lm_head on the very last position
-            batch_y_pred = self.lm_head(x[:, [-1], :])  # note: using list [-1] to preserve the time dim
+            # batch_y_pred = self.lm_head(x[:, [-1], :])  # note: using list [-1] to preserve the time dim
             loss = None
 
         return batch_y_pred, loss

@@ -17,15 +17,16 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Meta system identification with transformers')
 
+
     # Overall
     parser.add_argument('--model-dir', type=str, default="out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_sim_simple_example_1", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_sim_simple_example_1_v6", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_sim_simple_example_1", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_sim_simple_example_1_v6", metavar='S',
                         help='Loaded model name (when resuming)')
     parser.add_argument('--init-f'
-                        'rom', type=str, default="scratch", metavar='S',
+                        'rom', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -51,11 +52,11 @@ if __name__ == '__main__':
                         help='If True, keep the same model all the times')
 
     # Model
-    parser.add_argument('--n-layer', type=int, default=12, metavar='N',
+    parser.add_argument('--n-layer', type=int, default=6, metavar='N',
                         help='number of iterations (default: 1M)')
     parser.add_argument('--n-head', type=int, default=4, metavar='N',
                         help='number of iterations (default: 1M)')
-    parser.add_argument('--n-embd', type=int, default=128, metavar='N',
+    parser.add_argument('--n-embd', type=int, default=32, metavar='N',
                         help='number of iterations (default: 1M)')
     parser.add_argument('--dropout', type=float, default=0.0, metavar='LR',
                         help='learning rate (default: 1e-4)')
@@ -67,9 +68,9 @@ if __name__ == '__main__':
                         help='batch size (default:32)')
     parser.add_argument('--max-iters', type=int, default=1_000_000, metavar='N',
                         help='number of iterations (default: 1M)')
-    parser.add_argument('--warmup-iters', type=int, default=1_000, metavar='N',
+    parser.add_argument('--warmup-iters', type=int, default=10_000, metavar='N',
                         help='number of iterations (default: 1000)')
-    parser.add_argument('--lr', type=float, default=6e-4, metavar='LR',
+    parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
@@ -194,7 +195,7 @@ if __name__ == '__main__':
             batch_u_new = batch_u[:, cfg.seq_len_ctx:, :] # from u(m) to y(m+N-1)
             batch_r_new = batch_r[:, cfg.seq_len_ctx:, :] # from e(m) to e(m+N) the query is synchr.
 
-            batch_u_sim = model(batch_y_ctx, batch_u_ctx, batch_r_ctx, batch_y_new, batch_r_new)
+            batch_u_sim = model(batch_y_ctx, batch_u_ctx, batch_y_new, batch_r_new)
             loss_iter = torch.nn.functional.mse_loss(batch_u_new, batch_u_sim)
             # loss_iter = torch.nn.functional.mse_loss(batch_y_new[:, 1:, :], batch_y_sim[:, :-1, :])
 
@@ -263,7 +264,7 @@ if __name__ == '__main__':
         batch_u_new = batch_u[:, cfg.seq_len_ctx:, :]  # from u(m) to y(m+N-1)
         batch_r_new = batch_r[:, cfg.seq_len_ctx:, :]  # from e(m) to e(m+N) the query is synchr.
 
-        batch_u_sim = model(batch_y_ctx, batch_u_ctx, batch_r_ctx, batch_y_new, batch_r_new)
+        batch_u_sim = model(batch_y_ctx, batch_u_ctx, batch_y_new, batch_r_new)
 
         loss = torch.nn.functional.mse_loss(batch_u_new, batch_u_sim)
         # loss = torch.nn.functional.mse_loss(batch_y_new[:, 1:, :], batch_y_sim[:, :-1, :])
@@ -296,6 +297,7 @@ if __name__ == '__main__':
         'cfg': cfg,
     }
     torch.save(checkpoint, model_dir / f"{cfg.out_file}_last.pt")
+
 
     if cfg.log_wandb:
         wandb.finish()

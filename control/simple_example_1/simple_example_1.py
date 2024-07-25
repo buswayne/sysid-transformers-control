@@ -92,7 +92,7 @@ if __name__ == "__main__":
     perturbation = 0.0
 
     # Simulate the system trajectory using the model
-    x, u, y = simulate_simple_example_1(t, u, perturbation)
+    u, y = simulate_simple_example_1(t, u, perturbation)
 
     plt.subplot(211)
     plt.plot(t, y)

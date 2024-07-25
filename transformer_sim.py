@@ -163,20 +163,20 @@ class TSTransformer(nn.Module):
         self.decoder = TransformerDecoder(config.n_embd, config.n_head, config.n_layer,
                                           dropout=config.dropout, bias=config.bias)
 
-        self.encoder_wte = nn.Linear(config.n_u + config.n_y + 1, config.n_embd)
+        self.encoder_wte = nn.Linear(config.n_u + config.n_y, config.n_embd)
         self.encoder_wpe = nn.Embedding(config.seq_len_ctx, config.n_embd)
         #self.decoder_wte = nn.Linear(config.n_u + config.n_y, config.n_embd)
         self.decoder_wte = nn.Linear(config.n_u + 1, config.n_embd)
         self.decoder_wpe = nn.Embedding(config.seq_len_new, config.n_embd)
         self.lm_head = nn.Linear(config.n_embd, config.n_y, bias=True)  # keep bias here maybe?
 
-    def embed_ctx(self, y, u, r):
+    def embed_ctx(self, y, u, r=None):
         device = u.device
         b, t, nu = u.shape
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0)
         # yu = torch.cat((y, u), dim=-1)
         # tok_emb = self.encoder_wte(yu)
-        yur = torch.cat((y, u, r), dim=-1)
+        yur = torch.cat((y, u), dim=-1)
         tok_emb = self.encoder_wte(yur)
         pos_emb = self.encoder_wpe(pos)
         src = tok_emb + pos_emb  # perhaps dropout of this?
@@ -197,8 +197,8 @@ class TSTransformer(nn.Module):
         tgt = tok_emb_new + pos_emb_new
         return tgt
 
-    def forward(self, y, u, r, y_new, r_new):
-        src = self.embed_ctx(y, u, r)  # perhaps dropout of this?
+    def forward(self, y, u, y_new, r_new):
+        src = self.embed_ctx(y, u)  # perhaps dropout of this?
         tgt = self.embed_new(y_new, r_new)  # perhaps dropout of this?
         mem = self.encoder(src)
         output = self.decoder(tgt, mem)
