@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from wh_dataset import WHDataset
+from wh_dataset_paolo import WHDataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -23,7 +23,7 @@ if __name__ == '__main__':
                         help='Saved model name')
     parser.add_argument('--in-file', type=str, default="ckpt_wh_f2", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -77,7 +77,7 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Compute
-    parser.add_argument('--threads', type=int, default=16,
+    parser.add_argument('--threads', type=int, default=10,
                         help='number of CPU threads (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')

@@ -4,9 +4,9 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from wh_dataset_old import WHDataset
+from wh_dataset_paolo import WHDataset
 from torch.utils.data import DataLoader
-from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
+from transformer_onestep_pid import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
 import argparse
 #import wandb
@@ -83,7 +83,7 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Compute
-    parser.add_argument('--threads', type=int, default=16,
+    parser.add_argument('--threads', type=int, default=10,
                         help='number of CPU threads (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')

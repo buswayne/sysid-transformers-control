@@ -4,26 +4,35 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from wh_dataset_old import WHDataset
+from wh_dataset import WHDataset
 from torch.utils.data import DataLoader
-from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
+from transformer_onestep_pid import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
 import argparse
+import warnings
+
+# Disable all user warnings
+warnings.filterwarnings("ignore")
+
+# Your code goes here
+
+# Re-enable user warnings
+warnings.filterwarnings("default")
 #import wandb
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Meta system control with transformers')
+    parser = argparse.ArgumentParser(description='Meta system identification with transformers')
 
     # Overall
-    parser.add_argument('--model-dir', type=str, default="out", metavar='S',
+    parser.add_argument('--model-dir', type=str, default="../out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_wh5", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.63", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_wh5", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.63", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
+    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -37,7 +46,7 @@ if __name__ == '__main__':
                         help='model order (default: 5)')
     parser.add_argument('--ny', type=int, default=1, metavar='N',
                         help='model order (default: 5)')
-    parser.add_argument('--seq-len', type=int, default=500, metavar='N',
+    parser.add_argument('--seq-len', type=int, default=1000, metavar='N',
                         help='sequence length (default: 600)')
     parser.add_argument('--mag_range', type=tuple, default=(0.5, 0.97), metavar='N',
                         help='sequence length (default: 600)')
@@ -47,15 +56,23 @@ if __name__ == '__main__':
                         help='If True, keep the same model all the times')
 
     # Model
-    parser.add_argument('--n-layer', type=int, default=12, metavar='N',
+    parser.add_argument('--n-layer', type=int, default=8, metavar='N',
                         help='number of iterations (default: 1M)')
     parser.add_argument('--n-head', type=int, default=4, metavar='N',
                         help='number of iterations (default: 1M)')
-    parser.add_argument('--n-embd', type=int, default=128, metavar='N',
+    parser.add_argument('--n-embd', type=int, default=64, metavar='N',
                         help='number of iterations (default: 1M)')
-    parser.add_argument('--dropout', type=float, default=0.0, metavar='LR',
+    parser.add_argument('--dropout', type=float, default=0, metavar='LR',
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--bias', action='store_true', default=False,
+                        help='bias in model')
+    parser.add_argument('--reg_u_weight', type=float, default=0.0, metavar='N',
+                        help='bias in model')
+    parser.add_argument('--use_p', type=bool, default=True, metavar='N',
+                        help='PI controller as last layer')
+    parser.add_argument('--use_i', type=bool, default=True, metavar='N',
+                        help='bias in model')
+    parser.add_argument('--use_d', type=bool, default=True, metavar='N',
                         help='bias in model')
 
     # Training
@@ -65,7 +82,7 @@ if __name__ == '__main__':
                         help='number of iterations (default: 1M)')
     parser.add_argument('--warmup-iters', type=int, default=10_000, metavar='N',
                         help='number of iterations (default: 1000)')
-    parser.add_argument('--lr', type=float, default=6e-4, metavar='LR',
+    parser.add_argument('--lr', type=float, default=5e-4, metavar='LR',
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
@@ -77,7 +94,7 @@ if __name__ == '__main__':
                         help='disables CUDA training')
 
     # Compute
-    parser.add_argument('--threads', type=int, default=16,
+    parser.add_argument('--threads', type=int, default=10,
                         help='number of CPU threads (default: 10)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -92,7 +109,7 @@ if __name__ == '__main__':
     cfg.beta1 = 0.9
     cfg.beta2 = 0.95
 
-    print(cfg.seq_len)
+    # print(cfg.seq_len)
 
     # Derived settings
     n_skip = 0
@@ -128,25 +145,25 @@ if __name__ == '__main__':
     device_type = 'cuda' if 'cuda' in device_name else 'cpu' # for later use in torch.autocast
     torch.set_float32_matmul_precision("high")
 
-    print(torch.cuda.is_available())
-    print(torch.cuda.current_device())
+    # print(torch.cuda.is_available())
+    # print(torch.cuda.current_device())
 
     # Create data loader
     ###################################################################################################################
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = WHDataset(seq_len=cfg.seq_len, fixed_system= True, tau = 3)
+    train_ds = WHDataset(seq_len=500, system_seed=42, data_seed=445, return_y=False, fixed_system=True, normalize=True, use_prefilter=True)
 
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=True)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=False)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = WHDataset(seq_len=cfg.seq_len)
+    val_ds = WHDataset(seq_len=500, system_seed=42, data_seed=445, return_y=False, fixed_system=True, normalize=True, use_prefilter=True)
 
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=True)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=False)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
-                      bias=cfg.bias, dropout=cfg.dropout)  # start with model_args from command line
+                      bias=cfg.bias, dropout=cfg.dropout, use_p=cfg.use_p, use_i=cfg.use_i, use_d=cfg.use_d)  # start with model_args from command line
 
     if cfg.init_from == "scratch":
         gptconf = GPTConfig(**model_args)
@@ -154,6 +171,9 @@ if __name__ == '__main__':
     elif cfg.init_from == "resume" or cfg.init_from == "pretrained":
         ckpt_path = model_dir / f"{cfg.in_file}.pt"
         checkpoint = torch.load(ckpt_path, map_location=device)
+        checkpoint['model_args']['use_p'] = True
+        checkpoint['model_args']['use_i'] = True
+        checkpoint['model_args']['use_d'] = True
         gptconf = GPTConfig(**checkpoint["model_args"])
         model = GPT(gptconf)
         state_dict = checkpoint['model']
@@ -209,7 +229,7 @@ if __name__ == '__main__':
         if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
             loss_val = estimate_loss()
             LOSS_VAL.append(loss_val)
-            print(f"\n{iter_num=} {loss_val=:.6f}\n")
+            print(f"\n{iter_num=} {loss_val=:.4f}\n")
             if loss_val < best_val_loss:
                 best_val_loss = loss_val
                 checkpoint = {
@@ -239,7 +259,7 @@ if __name__ == '__main__':
         batch_u_pred, loss = model(batch_e, batch_u)
         LOSS_ITR.append(loss.item())
         if iter_num % 100 == 0:
-            print(f"\n{iter_num=} {loss=:.6f} {loss_val=:.6f} {lr_iter=}\n")
+            print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")
             if cfg.log_wandb:
                 wandb.log({"loss": loss, "loss_val": loss_val})
 
@@ -268,5 +288,4 @@ if __name__ == '__main__':
 
     if cfg.log_wandb:
         wandb.finish()
-
 
