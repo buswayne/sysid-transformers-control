@@ -30,9 +30,9 @@ if __name__ == '__main__':
                         help='Saved model folder')
     parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.62", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.61", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.62", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="pretrained", metavar='S',
+    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -68,11 +68,11 @@ if __name__ == '__main__':
                         help='bias in model')
     parser.add_argument('--reg_u_weight', type=float, default=0.0, metavar='N',
                         help='bias in model')
-    parser.add_argument('--use_p', type=bool, default=False, metavar='N',
+    parser.add_argument('--use_p', type=bool, default=True, metavar='N',
                         help='bias in model')
     parser.add_argument('--use_i', type=bool, default=True, metavar='N',
                         help='bias in model')
-    parser.add_argument('--use_d', type=bool, default=False, metavar='N',
+    parser.add_argument('--use_d', type=bool, default=True, metavar='N',
                         help='bias in model')
 
 
@@ -172,9 +172,9 @@ if __name__ == '__main__':
     elif cfg.init_from == "resume" or cfg.init_from == "pretrained":
         ckpt_path = model_dir / f"{cfg.in_file}.pt"
         checkpoint = torch.load(ckpt_path, map_location=device)
-        # checkpoint['model_args']['use_p'] = False
-        # checkpoint['model_args']['use_i'] = True
-        # checkpoint['model_args']['use_d'] = False
+        checkpoint['model_args']['use_p'] = True
+        checkpoint['model_args']['use_i'] = True
+        checkpoint['model_args']['use_d'] = True
         gptconf = GPTConfig(**checkpoint["model_args"])
         model = GPT(gptconf)
         state_dict = checkpoint['model']
