@@ -3,6 +3,7 @@ import time
 import torch
 import numpy as np
 import math
+import gc
 from functools import partial
 from dataset_torch import CustomDataset
 from torch.utils.data import DataLoader
@@ -26,6 +27,9 @@ warnings.filterwarnings("default")
 # Set the multiprocessing start method to 'spawn'
 mp.set_start_method('spawn', force=True)
 
+# Synchronize CUDA to ensure all operations are complete
+torch.cuda.synchronize()
+
 def custom_collate_fn(batch):
     batch_u, batch_e = zip(*batch)
 
@@ -42,11 +46,11 @@ if __name__ == '__main__':
     # Overall
     parser.add_argument('--model-dir', type=str, default="../out", metavar='S',
                         help='Saved model folder')
-    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.70", metavar='S',
+    parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.71", metavar='S',
                         help='Saved model name')
     parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.70", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="scratch", metavar='S',
+    parser.add_argument('--init-from', type=str, default="pretrained", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -101,9 +105,9 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--weight-decay', type=float, default=0.0, metavar='D',
                         help='weight decay (default: 1e-4)')
-    parser.add_argument('--eval-interval', type=int, default=500, metavar='N',
+    parser.add_argument('--eval-interval', type=int, default=200, metavar='N',
                         help='batch size (default:32)')
-    parser.add_argument('--eval-iters', type=int, default=100, metavar='N',
+    parser.add_argument('--eval-iters', type=int, default=10, metavar='N',
                         help='batch size (default:32)')
     parser.add_argument('--fixed-lr', action='store_true', default=False,
                         help='disables CUDA training')
@@ -175,7 +179,7 @@ if __name__ == '__main__':
     # if we work with a constant model we also validate with the same (thus same seed!)
     val_ds = CustomDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
 
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=cfg.threads, pin_memory=False)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=0, pin_memory=False)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
                       bias=cfg.bias, dropout=cfg.dropout, use_p=cfg.use_p, use_i=cfg.use_i, use_d=cfg.use_d)  # start with model_args from command line
@@ -213,9 +217,9 @@ if __name__ == '__main__':
         model.eval()
         loss = 0.0
         for eval_iter, (batch_u, batch_e) in enumerate(val_dl):
-            # if device_type == "cuda":
-            #     batch_u = batch_u.pin_memory().to(device, non_blocking=True)
-            #     batch_e = batch_e.pin_memory().to(device, non_blocking=True)
+            if device_type == "cuda":
+                batch_u = batch_u.to(device, non_blocking=True)
+                batch_e = batch_e.to(device, non_blocking=True)
             _, loss_iter = model(batch_e, batch_u)
             loss += loss_iter.item()
             if eval_iter == cfg.eval_iters:
@@ -281,6 +285,8 @@ if __name__ == '__main__':
             LOSS_ITR.append(loss.item())
             if iter_num % 100 == 0:
                 print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")
+                torch.cuda.empty_cache()  # Optionally clear GPU cache after processing
+                gc.collect()              # Forces garbage collection
                 if cfg.log_wandb:
                     wandb.log({"loss": loss, "loss_val": loss_val})
 

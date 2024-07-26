@@ -8,7 +8,7 @@ from control_torch import drss, forced_response, tf2ss, c2d, perturb_matrices, s
 import matplotlib.pyplot as plt
 
 class CustomDataset(IterableDataset):
-    def __init__(self, seq_len, nx=2, nu=1, ny=1, seed=42, ts=0.01):
+    def __init__(self, seq_len, nx=2, nu=1, ny=1, seed=42, ts=0.01, return_y=False):
         set_seed(42)
 
         self.seq_len = seq_len + 1
@@ -18,14 +18,15 @@ class CustomDataset(IterableDataset):
 
         # define settings
         self.ts = ts
+        self.return_y = return_y
 
         # define nominal model
-        self.sys_0 = drss(self.nx, self.nu, self.ny, device=device)
+        self.G_0 = drss(self.nx, self.nu, self.ny, device=device)
 
         # define model reference
         tau = 1
         M_num = torch.tensor([0.01, 1], device=device, dtype=torch.float32)  # Numerator coefficients
-        M_den = torch.tensor([tau, 1], device=device, dtype=torch.float32)  # Denominator coefficients
+        M_den = torch.tensor([tau/4, 1], device=device, dtype=torch.float32)  # Denominator coefficients
         M = tf2ss(M_num, M_den, device=device)  # M
         M_inv = tf2ss(M_den, M_num, device=device)  # M^-1, num den are inverted
         self.M = c2d(*M, self.ts, device=device)
@@ -36,13 +37,13 @@ class CustomDataset(IterableDataset):
         while True: # dataset is infinite
 
             # Generate data on-the-fly
-            sys = perturb_matrices(*self.sys_0, percentage=0, device=device)
+            G = perturb_matrices(*self.G_0, percentage=0, device=device)
 
             u = torch.randn(self.seq_len, self.nu, device=device, dtype=torch.float32)
             # u = torch.ones(self.seq_len, self.nu, device=device, dtype=torch.float32)
 
             # Simulate forced response using custom GPU function
-            y = forced_response(*sys, u)
+            y = forced_response(*G, u)
 
             # Prefilter with M
             u_L = forced_response(*self.M, u)
@@ -60,12 +61,14 @@ class CustomDataset(IterableDataset):
             r_v = r_v[1:]
             e_v = e_v[1:]
 
-            yield u_L, e_v
-
+            if self.return_y:
+                yield y_L, u_L, e_v
+            else:
+                yield u_L, e_v
 if __name__ == "__main__":
     from torch.utils.data import DataLoader
 
-    dataset = CustomDataset(seq_len=500, ts=0.01, seed=42)
+    dataset = CustomDataset(seq_len=500, ts=0.01, seed=42, return_y=True)
     dataloader = DataLoader(dataset, batch_size=32)
 
     batch_y, batch_u, batch_e = next(iter(dataloader))

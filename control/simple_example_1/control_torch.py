@@ -58,7 +58,7 @@ def drss(nx, nu, ny, stricly_proper=True, device="cuda:0", dtype=torch.float32):
     return A, B, C, D
 
 
-def forced_response(A, B, C, D, u, x0=None):
+def forced_response(A, B, C, D, u, x0=None, return_x=False):
     """
     Simulate the forced response of a discrete-time linear system.
     Args:
@@ -76,21 +76,22 @@ def forced_response(A, B, C, D, u, x0=None):
     if x0 is None:
         x0 = torch.zeros(nx, device=u.device, dtype=u.dtype)
     else:
-        x0 = torch.tensor(x0, device=u.device, dtype=u.dtype)
+        # x0 = torch.tensor(x0, device=u.device, dtype=u.dtype)
         if x0.shape[0] != nx:
             raise ValueError(f"Initial state x0 must have {nx} elements, but got {x0.shape[0]}")
 
     x = x0
     y = torch.zeros(T, ny, device=u.device, dtype=u.dtype)  # Preallocate tensor for outputs
 
-    # Compute the initial output
-    y[0] = C @ x0 + D @ u[0]
-
-    for t in range(1, T):  # Start from the second sample to avoid duplicating the initial output
-        x = A @ x + B @ u[t]
+    for t in range(0, T):  # Start from the second sample to avoid duplicating the initial output
         y[t] = C @ x + D @ u[t]
+        x = A @ x + B @ u[t]
 
-    return y
+
+    if return_x:
+        return y, x
+    else:
+        return y
 
 def normalize(num, den, device='cuda'):
     """Normalize numerator/denominator of a continuous-time transfer function on GPU.
