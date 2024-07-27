@@ -174,12 +174,12 @@ if __name__ == '__main__':
 
     train_ds = CustomDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
 
-    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=False)
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=False, persistent_workers=False)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
     val_ds = CustomDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
 
-    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=0, pin_memory=False)
+    val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=0, pin_memory=False, persistent_workers=False)
 
     model_args = dict(n_layer=cfg.n_layer, n_head=cfg.n_head, n_embd=cfg.n_embd, n_y=cfg.ny, n_u=cfg.nu, block_size=cfg.block_size,
                       bias=cfg.bias, dropout=cfg.dropout, use_p=cfg.use_p, use_i=cfg.use_i, use_d=cfg.use_d)  # start with model_args from command line
@@ -244,60 +244,62 @@ if __name__ == '__main__':
                      warmup_iters=cfg.warmup_iters, lr_decay_iters=cfg.lr_decay_iters)
     time_start = time.time()
 
-    with torch.profiler.profile(
-            activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
-            record_shapes=True
-    ) as prof:
-        for iter_num, (batch_u, batch_e) in tqdm.tqdm(enumerate(train_dl, start=iter_num)):
+    # with torch.profiler.profile(
+    #         activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+    #         record_shapes=True
+    # ) as prof:
+    for iter_num, (batch_u, batch_e) in tqdm.tqdm(enumerate(train_dl, start=iter_num)):
 
-            if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
-                loss_val = estimate_loss()
-                LOSS_VAL.append(loss_val)
-                print(f"\n{iter_num=} {loss_val=:.4f}\n")
-                if loss_val < best_val_loss:
-                    best_val_loss = loss_val
-                    checkpoint = {
-                        'model': model.state_dict(),
-                        'optimizer': optimizer.state_dict(),
-                        'model_args': model_args,
-                        'iter_num': iter_num,
-                        'train_time': time.time() - time_start,
-                        'LOSS': LOSS_ITR,
-                        'LOSS_VAL': LOSS_VAL,
-                        'best_val_loss': best_val_loss,
-                        'cfg': cfg,
-                    }
-                    torch.save(checkpoint, model_dir / f"{cfg.out_file}.pt")
-            # determine and set the learning rate for this iteration
-            if cfg.decay_lr:
-                lr_iter = get_lr(iter_num)
-            else:
-                lr_iter = cfg.lr
+        if (iter_num % cfg.eval_interval == 0) and iter_num > 0:
+            loss_val = estimate_loss()
+            LOSS_VAL.append(loss_val)
+            print(f"\n{iter_num=} {loss_val=:.4f}\n")
+            if loss_val < best_val_loss:
+                best_val_loss = loss_val
+                checkpoint = {
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'model_args': model_args,
+                    'iter_num': iter_num,
+                    'train_time': time.time() - time_start,
+                    'LOSS': LOSS_ITR,
+                    'LOSS_VAL': LOSS_VAL,
+                    'best_val_loss': best_val_loss,
+                    'cfg': cfg,
+                }
+                torch.save(checkpoint, model_dir / f"{cfg.out_file}.pt")
+        # determine and set the learning rate for this iteration
+        if cfg.decay_lr:
+            lr_iter = get_lr(iter_num)
+        else:
+            lr_iter = cfg.lr
 
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = lr_iter
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr_iter
 
-            if device_type == "cuda":
-                batch_u = batch_u.to(device, non_blocking=True)
-                batch_e = batch_e.to(device, non_blocking=True)
+        if device_type == "cuda":
+            batch_u = batch_u.to(device, non_blocking=True)
+            batch_e = batch_e.to(device, non_blocking=True)
 
-            batch_u_pred, loss = model(batch_e, batch_u)
-            LOSS_ITR.append(loss.item())
-            if iter_num % 100 == 0:
-                print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")
-                torch.cuda.empty_cache()  # Optionally clear GPU cache after processing
-                gc.collect()              # Forces garbage collection
-                if cfg.log_wandb:
-                    wandb.log({"loss": loss, "loss_val": loss_val})
+        _, loss = model(batch_e, batch_u)
+        batch_e.detach()
+        batch_u.detach()
+        LOSS_ITR.append(loss.item())
+        if iter_num % 100 == 0:
+            print(f"\n{iter_num=} {loss=:.4f} {loss_val=:.4f} {lr_iter=}\n")
+            torch.cuda.empty_cache()  # Optionally clear GPU cache after processing
+            gc.collect()              # Forces garbage collection
+            if cfg.log_wandb:
+                wandb.log({"loss": loss, "loss_val": loss_val})
 
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
-            if iter_num == cfg.max_iters-1:
-                break
+        if iter_num == cfg.max_iters-1:
+            break
 
-    print(print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10)))
+    # print(print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10)))
     time_loop = time.time() - time_start
     print(f"\n{time_loop=:.2f} seconds.")
 
