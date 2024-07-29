@@ -30,9 +30,9 @@ class SimpleExample1Dataset(IterableDataset):
             n_steps = np.random.randint(2, 50)
             u = np.random.normal(0, 1000, t.shape)
 
-            f = interp1d(t[::n_steps], u[::n_steps], kind='next',
-                         bounds_error=False,
-                         fill_value=0.0)
+            #f = interp1d(t[::n_steps], u[::n_steps], kind='next',
+            #             bounds_error=False,
+            #             fill_value=0.0)
             #u = f(t)
             u = np.nan_to_num(u)
             #print(np.isnan(u).sum())

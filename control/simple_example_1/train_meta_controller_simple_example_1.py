@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from functools import partial
-from dataset_simple_example_1 import SimpleExample1Dataset
+from control.simple_example_1.dataset_simple_example_1 import SimpleExample1Dataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
