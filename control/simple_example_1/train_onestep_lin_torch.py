@@ -5,7 +5,7 @@ import numpy as np
 import math
 import gc
 from functools import partial
-from dataset_torch import CustomDataset
+from dataset_torch import LinearDataset
 from torch.utils.data import DataLoader
 from transformer_onestep import GPTConfig, GPT, warmup_cosine_lr
 import tqdm
@@ -28,7 +28,7 @@ warnings.filterwarnings("default")
 mp.set_start_method('spawn', force=True)
 
 # Synchronize CUDA to ensure all operations are complete
-torch.cuda.synchronize()
+# torch.cuda.synchronize()
 
 def custom_collate_fn(batch):
     batch_u, batch_e = zip(*batch)
@@ -48,9 +48,9 @@ if __name__ == '__main__':
                         help='Saved model folder')
     parser.add_argument('--out-file', type=str, default="ckpt_controller_simple_example_1.71", metavar='S',
                         help='Saved model name')
-    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.70", metavar='S',
+    parser.add_argument('--in-file', type=str, default="ckpt_controller_simple_example_1.71", metavar='S',
                         help='Loaded model name (when resuming)')
-    parser.add_argument('--init-from', type=str, default="pretrained", metavar='S',
+    parser.add_argument('--init-from', type=str, default="resume", metavar='S',
                         help='Init from (scratch|resume|pretrained)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Seed for random number generation')
@@ -172,12 +172,12 @@ if __name__ == '__main__':
     ####### This part is modified to use CSTR data ####################################################################
     ###################################################################################################################
 
-    train_ds = CustomDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
+    train_ds = LinearDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, num_workers=cfg.threads, pin_memory=False, persistent_workers=False)
 
     # if we work with a constant model we also validate with the same (thus same seed!)
-    val_ds = CustomDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
+    val_ds = LinearDataset(seq_len=cfg.seq_len, ts=0.01, seed=42)
 
     val_dl = DataLoader(val_ds, batch_size=cfg.eval_batch_size, num_workers=0, pin_memory=False, persistent_workers=False)
 

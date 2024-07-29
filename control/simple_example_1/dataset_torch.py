@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import time
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 from torch.utils.data import IterableDataset
@@ -7,7 +8,7 @@ from control_torch import drss, forced_response, tf2ss, c2d, perturb_matrices, s
 
 import matplotlib.pyplot as plt
 
-class CustomDataset(IterableDataset):
+class LinearDataset(IterableDataset):
     def __init__(self, seq_len, nx=2, nu=1, ny=1, seed=42, ts=0.01, return_y=False):
         set_seed(42)
 
@@ -39,7 +40,7 @@ class CustomDataset(IterableDataset):
             # Generate data on-the-fly
             G = perturb_matrices(*self.G_0, percentage=0, device=device)
 
-            u = torch.randn(self.seq_len, self.nu, device=device, dtype=torch.float32)
+            u = 1000*torch.randn(self.seq_len, self.nu, device=device, dtype=torch.float32)
             # u = torch.ones(self.seq_len, self.nu, device=device, dtype=torch.float32)
 
             # Simulate forced response using custom GPU function
@@ -154,13 +155,13 @@ class WHDataset(IterableDataset):
 if __name__ == "__main__":
     from torch.utils.data import DataLoader
 
-    dataset = CustomDataset(seq_len=500, ts=0.01, seed=42, return_y=True)
+    dataset = LinearDataset(seq_len=500, ts=0.01, seed=42, return_y=True)
     # dataset = WHDataset(seq_len=500, ts=0.01, seed=42, return_y=True)
     dataloader = DataLoader(dataset, batch_size=32)
 
-    batch_y, batch_u, batch_e = next(iter(dataloader))
+    start = time.time()
 
-    print(batch_y.shape)
+    batch_y, batch_u, batch_e = next(iter(dataloader))
 
     ts = 1e-2
     T = batch_u.shape[1] * ts  # ts*self.seq_len# * 2

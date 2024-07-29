@@ -28,7 +28,7 @@ warnings.filterwarnings("default")
 mp.set_start_method('spawn', force=True)
 
 # Synchronize CUDA to ensure all operations are complete
-torch.cuda.synchronize()
+# torch.cuda.synchronize()
 
 def custom_collate_fn(batch):
     batch_u, batch_e = zip(*batch)
